@@ -1,0 +1,22 @@
+# macOS system files
+.DS_Store
+
+# Python cache files
+__pycache__/
+
+# Data, Figure, and Result folders
+Data/
+FigShare/
+Figures/
+SupplementaryTables/
+Results/
+
+# Files
+*.csv
+*.xlsx
+*.txt
+*.tsv
+rna_qc_metric.ipynb
+table_editing.ipynb
+seeding_lesion_plots.Rmd
+single_cell_analysis_.Rmd

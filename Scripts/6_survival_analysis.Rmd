@@ -1,0 +1,345 @@
+---
+title: "6. Survival analysis"
+output: html_document
+date: "2025-06-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load global configuration
+```{r}
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/global_config.R")
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/bulk_config.R")
+```
+
+# K-mean clustering & Survival Analysis
+```{r}
+survival_analysis <- function(geneSet, expName, expr_data, data_info, label = "TCGA"){
+  # initialize
+  #data_info <- read.csv(paste0(PATH_DATA, clinical_file), row.names = 1)
+  #data_info <- data_info[match(expr_data$patient_id, data_info$patID),]
+  #data_info$sampleID <- rownames(expr_data)
+  set.seed(5)
+  # 2. Cluster TCGA RP samples based on expression of genes in prostadiag
+  valid_geneSet <- intersect(geneSet, rownames(expr_data))
+  print(valid_geneSet)
+  expr_df = expr_data[valid_geneSet, ]
+  annot_df = data.frame(data_info$LNstatus)
+  
+  colnames(annot_df) <- 'LNstatus'
+  rownames(annot_df) <- colnames(expr_data)
+  colours <- list('LNstatus' = c('N1' = '#FF0000', 'N0' = '#0000FF', 'NA' =  '#FFFFFF'))
+  colAnn <- HeatmapAnnotation(df = annot_df,
+                              which = 'col',
+                              col = colours,
+                              annotation_width = unit(c(1, 4), 'cm'),
+                              gap = unit(1, 'mm'))
+  heatmap_legend_param = list(
+        title = "matrix"
+    )
+  hmap <- Heatmap(expr_df,  show_column_names = FALSE, show_row_names = TRUE, 
+              top_annotation=colAnn, cluster_columns = TRUE, cluster_rows = FALSE, column_km = 2, heatmap_legend_param = heatmap_legend_param, 
+              row_names_gp = gpar(fontfamily = "sans", fontface = "italic"))
+  
+  png(paste0(PATH_FIG_HEATMAPS, label,"_clusters_", expName, ".png"), width = 8, height = 8, res = 600, units = "in")
+  hmap_draw <- draw(hmap, heatmap_legend_side="left", annotation_legend_side="right")
+  dev.off()
+  
+  column_order <- column_order(hmap)
+  sampleIDs <- colnames(expr_data)
+  cluster1 <- sampleIDs[column_order$`1`]
+  cluster2 <- sampleIDs[column_order$`2`]
+  
+  cluster1_N1 <- cluster1[cluster1 %in% rownames(annot_df)[annot_df$LNstatus=="N1"]]
+  cluster2_N1 <- cluster2[cluster2 %in% rownames(annot_df)[annot_df$LNstatus=="N1"]]
+  
+  ratio1 = length(cluster1_N1)/length(cluster1)
+  ratio2 = length(cluster2_N1)/length(cluster2)
+  
+  if (ratio1>ratio2){
+    cluster_pval <- fisher.test(matrix(c(length(cluster1_N1), length(cluster1)-length(length(cluster1_N1)),
+                             length(cluster2_N1), length(cluster2)-length(cluster2_N1)), nrow=2), 
+                    alternative="greater")$p.value
+    cluster_with_more_N1 <- 'C1'
+  } else {
+    cluster_pval <- fisher.test(matrix(c(length(cluster2_N1), length(cluster2)-length(cluster2_N1),
+                               length(cluster1_N1), length(cluster1)-length(cluster1_N1)), nrow=2), 
+                      alternative="greater")$p.value
+    cluster_with_more_N1 <- 'C2'
+  }
+  
+  data_info$cluster <- ifelse(rownames(annot_df) %in% cluster1, "1", "2")
+  
+  # 2. KM
+  fit <- survfit(Surv(endpoint.time, endpoint) ~ cluster, data=data_info)
+  clusters <- levels(as.factor(data_info$cluster))
+  pval <- surv_pvalue(fit, data=data_info)$pval
+  color <- c("#FF0000", "#FFA500")
+  ggsurv <- ggsurvplot(fit, data = data_info, size = 1, ylab = "Survival fraction", xlab = "Time to progression (years)", 
+                     palette = color, conf.int = FALSE, pval = paste(c("Log-rank p-value = ", signif(pval, digits=3)), collapse = ""), 
+                     legend = c(0.9,0.9), legend.labs = clusters, legend.title = "Cluster",
+                     censor.shape="|",
+                     risk.table = "nrisk_cumcensor",
+                     risk.table.title = "Number at risk (number censored)", 
+                     risk.table.col = "black", 
+                     risk.table.height = 0.20,
+                     risk.table.y.text.col = T,
+                     risk.table.y.text = F,
+                     ggtheme = theme_survminer() + 
+                       theme(axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15), 
+                             legend.text = element_text(size = 15), legend.title = element_text(size = 15)), 
+                     tables.theme = theme_survminer() + 
+                       theme(axis.line = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank())
+                 )
+  
+  png(paste0(PATH_FIG_SURVIVAL, label, "_SC_clusters_", expName, ".png"), width = 7, height = 6, res = 600, units = "in")
+  print(ggsurv, newpage = FALSE)
+  dev.off()
+  
+  data_info$aggressive <- ifelse(data_info$cluster == str_sub(cluster_with_more_N1, 2, 2), 1, 0)
+  cox <- coxph(Surv(endpoint.time, endpoint) ~ aggressive, data = data_info)
+  hazard_ratio <- exp(cox$coefficients)
+  conf_interval <- exp(confint(cox, level = 0.95))
+  #print(summary(cox))
+  
+  write.csv(cbind(data_info, t(expr_df)), paste0(PATH_FIGSHARE, label, "_SC_clusters_", expName, ".csv"), row.names = FALSE)
+  
+  return(paste(c(cluster_with_more_N1, -log10(cluster_pval), -log10(pval), hazard_ratio, conf_interval[1], conf_interval[2]), collapse = ';'))
+  #return(hmap)
+}
+```
+
+# Load marker genes
+```{r}
+# Load genes that mark deviating cells
+Luminal_pca_embeddings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure3A_top_Data.csv"), row.names = 1)
+Luminal_pca_loadings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure3A_bottom_Data", ".csv"), row.names = 1)
+Luminal_dev_markers_all <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable12.1_Luminal_dev_findmarkers_all", ".csv"))
+genes_ordered_by_loadings <- rownames(Luminal_pca_loadings_sign[order(abs(Luminal_pca_loadings_sign[, "PC_1"]), decreasing = TRUE),])
+Luminal_markers <- intersect(genes_ordered_by_loadings, rownames(Luminal_dev_markers_all[Luminal_dev_markers_all$top30_loadings,]))
+
+Fibroblast_pca_embeddings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure4A_top_Data", ".csv"), row.names = 1)
+Fibroblast_pca_loadings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure4A_bottom_Data", ".csv"), row.names = 1)
+Fibroblast_dev_markers_all <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable13.1_Fibroblast_dev_findmarkers_all", ".csv"))
+genes_ordered_by_loadings <- rownames(Fibroblast_pca_loadings_sign[order(abs(Fibroblast_pca_loadings_sign[, "PC_2"]), decreasing = TRUE),])
+Fibroblast_markers <- intersect(genes_ordered_by_loadings, rownames(Fibroblast_dev_markers_all[Fibroblast_dev_markers_all$top30_loadings,]))
+
+Endothelial_pca_embeddings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure5A_left_Data", ".csv"), row.names=1)
+Endothelial_pca_loadings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure5A_right_Data", ".csv"), row.names = 1)
+Endothelial_dev_markers_all <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable14.1_Endothelial_withoutdoublets_dev_findmarkers_all", ".csv"))
+genes_ordered_by_loadings <- rownames(Endothelial_pca_loadings_sign[order(abs(Endothelial_pca_loadings_sign[, "PC_2"]), decreasing = TRUE),])
+Endothelial_markers <- intersect(genes_ordered_by_loadings, rownames(Endothelial_dev_markers_all[Endothelial_dev_markers_all$top30_loadings,]))
+
+# Deviating luminal specific markers
+Luminal_reduced_markers_top10 <- c('UBE2C', 'TOP2A', 'NUSAP1', 'MKI67', 'TPX2', 'CENPF', 'HMMR', 'PBK',  'CCNB1', 'CCNB2')
+Luminal_reduced_markers_top5 <- c('UBE2C', 'TOP2A', 'NUSAP1', 'CENPF', 'TPX2')
+CAFs_specific <- c('CTHRC1', 'VCAN', 'COMP', 'SFRP4', 'LOXL1', 'COL10A1', 'CXCL14', 'COL11A1', 'FBLN2', 'THBS2')
+# Adipose-derived CAF specific markers
+# CAFs_reduced_CTHRC1 <- c('CTHRC1', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+# CAFs_reduced_COMP <- c('COMP', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+CAFs_reduced_VCAN <- c('VCAN', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+# CAFs_reduced_LOXL1 <- c('LOXL1', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+# CAFs_reduced_CXCL14 <- c('CXCL14', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+# CAFs_reduced_FBLN2 <- c('FBLN2', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+# Combined markers (Deviating luminal + Adipose-derived CAFs)
+# combined_markers_CTHRC1 <- c('UBE2C', 'TOP2A', 'NUSAP1', 'CENPF', 'TPX2', 'CTHRC1', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+# combined_markers_COMP<- c('UBE2C', 'TOP2A', 'NUSAP1', 'CENPF', 'TPX2', 'COMP', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+combined_markers_VCAN<- c('UBE2C', 'TOP2A', 'NUSAP1', 'CENPF', 'TPX2', 'VCAN', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+# combined_markers_LOXL1<- c('UBE2C', 'TOP2A', 'NUSAP1', 'CENPF', 'TPX2', 'LOXL1', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+# combined_markers_CXCL14<- c('UBE2C', 'TOP2A', 'NUSAP1', 'CENPF', 'TPX2', 'CXCL14', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+# combined_markers_FBLN2<- c('UBE2C', 'TOP2A', 'NUSAP1', 'CENPF', 'TPX2', 'FBLN2', 'SFRP4', 'THBS2', 'COL10A1', 'COL11A1')
+```
+
+# K-means clustering & KM curves based on N1 and N0 status in TCGA
+```{r}
+# Keep only those for which the LN status is known
+data_info <- tcga_info[tcga_info$LNstatus!="NA",]
+# write.csv(info, paste0(PATH_FIGSHARE, "SupplementaryFigure76_Data", ".csv"), row.names = FALSE)
+
+fit <- survfit(Surv(endpoint.time, endpoint) ~ LNstatus, data=data_info)
+clusters <- levels(as.factor(data_info$LNstatus))
+N1_pval <- surv_pvalue(fit)$pval
+color <- c("#FF0000", "#FFA500")
+
+# Kaplan Meier
+ggsurv <- ggsurvplot(fit, data = data_info, size = 1, ylab = "Survival fraction", xlab = "Time to progression (years)", 
+                     palette = color, conf.int = FALSE, pval = paste(c("Log-rank p-value = ", signif(N1_pval, digits=3)), collapse = ""), 
+                     legend = c(0.9,0.9), legend.labs = clusters, legend.title = "Cluster",
+                     censor.shape="|",
+                     risk.table = "nrisk_cumcensor",
+                     risk.table.title = "Number at risk (number censored)", 
+                     risk.table.col = "black", 
+                     risk.table.height = 0.20,
+                     risk.table.y.text.col = T,
+                     risk.table.y.text = F,
+                     ggtheme = theme_survminer() + 
+                       theme(axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15), 
+                             legend.text = element_text(size = 15), legend.title = element_text(size = 15)), 
+                     tables.theme = theme_survminer() + 
+                       theme(axis.line = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank())
+                 )
+
+png(paste0(PATH_FIG_SURVIVAL, "TCGA_SC_N1_N0", ".png"), width = 6, height = 5, res = 600, units = "in")
+print(ggsurv, newpage = FALSE)
+dev.off()
+
+# Hazard ratio
+data_info$aggressive <- ifelse(data_info$LNstatus == 'N1', 1, 0)
+cox <- coxph(Surv(endpoint.time, endpoint) ~ aggressive, data = data_info)
+N1_hazard_ratio <- exp(cox$coefficients)
+N1_conf_interval <- exp(confint(cox, level = 0.95))
+```
+
+# With a random signature
+```{r}
+set.seed(5)
+random_genes <- sample(rownames(tcga), length(rownames(signature_df)))
+expr_df = tcga[random_genes, tcga_info$sampleID]
+annot_df = data.frame(tcga_info$LNstatus)
+colnames(annot_df) <- 'LNstatus'
+rownames(annot_df) <- tcga_info$sampleID
+
+colours <- list('LNstatus' = c('N1' = '#FF0000', 'N0' = '#0000FF', 'NA' =  '#FFFFFF'))
+colAnn <- HeatmapAnnotation(df = annot_df,
+                            which = 'col',
+                            col = colours,
+                            annotation_width = unit(c(1, 4), 'cm'),
+                            gap = unit(1, 'mm'))
+
+hmap <- Heatmap(expr_df,  show_column_names = FALSE, show_row_names = FALSE, 
+                top_annotation=colAnn, cluster_columns = TRUE, cluster_rows = FALSE, column_km = 2)
+
+png(paste0(PATH_FIG_HEATMAPS, "TCGA_clusters_random_signature", ".png"), width = 8, height = 8, res = 600, units = "in")
+draw(hmap, heatmap_legend_side="left", annotation_legend_side="right")
+dev.off()
+
+column_order <- column_order(hmap)
+sampleIDs <- colnames(expr_df)
+cluster1 <- sampleIDs[column_order$`1`]
+cluster2 <- sampleIDs[column_order$`2`]
+
+cluster1_N1 <- cluster1[cluster1 %in% rownames(annot_df)[annot_df$LNstatus=="N1"]]
+cluster2_N1 <- cluster2[cluster2 %in% rownames(annot_df)[annot_df$LNstatus=="N1"]]
+
+ratio1 = length(cluster1_N1)/length(cluster1)
+ratio2 = length(cluster2_N1)/length(cluster2)
+
+if (ratio1>ratio2){
+  print(fisher.test(matrix(c(length(cluster1_N1), length(cluster1)-length(length(cluster1_N1)),
+                             length(cluster2_N1), length(cluster2)-length(cluster2_N1)), nrow=2), 
+                    alternative="greater"))
+  print("cluster1 contains a higher number of N1 sample")
+} else {
+  print(fisher.test(matrix(c(length(cluster2_N1), length(cluster2)-length(cluster2_N1),
+                             length(cluster1_N1), length(cluster1)-length(cluster1_N1)), nrow=2), 
+                    alternative="greater"))
+  print("cluster2 contains a higher number of N1 sample")
+}
+
+tcga_info$cluster <- ifelse(tcga_info$sampleID %in% cluster1, "C1", "C2")
+
+# 2. KM
+info <- tcga_info
+fit <- survfit(Surv(endpoint.time, endpoint) ~ cluster, data=info)
+clusters <- levels(as.factor(info$cluster))
+pval <- surv_pvalue(fit)$pval
+
+ggsurv <- ggsurvplot(fit, data = info, size = 1, ylab = "PFI", palette = c("#E7B800", "#2E9FDF"), 
+                     conf.int = TRUE, pval = TRUE, risk.table = TRUE, 
+                     risk.table.col = "strata",censor.shape="|", legend.labs = c(clusters),  
+                     risk.table.height = 0.25, ggtheme = theme_bw())
+
+# png(paste0(PATH_FIG_SURVIVAL, "TCGA_SC_clusters_random_signature", ".png"), width = 6, height = 5, res = 600, units = "in")
+# print(ggsurv, newpage = FALSE)
+# dev.off()
+```
+
+# K-means clustering & KM curves based on markers/signatures in TCGA
+```{r}
+# Ground Truth
+# geneSets <- list(decipher, prostadiag, oncotypeDX, CAFs, cell_cycle, basal_intermediate_cells)
+geneSets <- list(decipher, prostadiag, oncotypeDX, Luminal_markers, Luminal_reduced_markers_top10, Luminal_reduced_markers_top5, Endothelial_markers, Fibroblast_markers, CAFs_specific, CAFs_reduced_VCAN, combined_markers_VCAN)
+real_surv_summary <- list()
+
+# Add LN status
+# N1_cluster_pval <- paste(c("0", "0", -log10(N1_pval), N1_hazard_ratio, N1_conf_interval[1], N1_conf_interval[2]), collapse = ';')
+# real_surv_summary["LN status (baseline)"] <- list(str_split_1(paste(c(N1_cluster_pval), collapse = ';'), ';'))
+
+# expNames <- c('decipher', 'prostadiag', 'oncotypeDX', 'CAFs', 'cellCycle', 'basalIntermediate')
+expNames <- c('Decipher (N=16)', 'Prostadiag (N=36)', 'OncotypeDX (N=12)', 'Proliferative luminal cells (N=30)', 'Luminal proliferative top-10 (N=10)', 'Luminal proliferative reduced (N=5)', 'Arterial endothelial cells (N=27)', 'Adipose-derived fibroblasts (N=24)', 'Adipose-derived CAFs (N=10)', 'Aggressive CAF markers (N=5)', 'Combined signature (N=10)')
+row_names <- c('cluster', 'fisher.p.val', 'log.rank.p.val', 'HR', 'low.HR', 'high.HR')
+
+for (i in seq_along(geneSets)){
+  expName <- expNames[i]
+  geneSet <- geneSets[[i]]
+  cluster_pval <- survival_analysis(geneSet, expName, tcga, tcga_info, label="TCGA")
+  real_surv_summary[expName] <- list(str_split_1(paste(c(cluster_pval), collapse = ';'), ';'))
+}
+```
+# Summary plots
+```{r}
+real_surv_summary_table <- data.frame(t(data.frame(real_surv_summary, row.names = row_names)))
+real_surv_summary_table[] <- lapply(real_surv_summary_table, function(x) {
+  if (all(!is.na(suppressWarnings(as.numeric(x))))) {
+    as.numeric(x)
+  } else {
+    x
+  }
+})
+real_surv_summary_table$expNames <- expNames
+real_surv_summary_table$expNames <- factor(real_surv_summary_table$expNames, levels = expNames)
+
+plot_width <- 4 # Adjust plot width
+
+pval_plot <- ggplot(real_surv_summary_table, aes(x = expNames, y = fisher.p.val)) +
+            geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue", linewidth = 1) + 
+            geom_point(size = 2, position = position_dodge(width = 0.2)) +  # Dot plot
+            labs(y = expression(-log[10](p-value)), x = NULL) +  # Axes labels
+            theme(panel.background = element_rect(fill = "white"),
+                  panel.grid.major.y = element_line(color = "grey90"),
+                  axis.line = element_line(color = "black"), 
+                  axis.text.x = element_text(angle = 90, hjust = 1, size = 12),
+                  axis.text.y = element_text(size = 12),
+                  #axis.text.x = element_blank(),
+                  legend.title = element_blank()
+                  ) + 
+            coord_cartesian(ylim = c(0, 9))
+            #coord_cartesian(ylim = c(0, 5))
+ggsave(paste0(PATH_FIG_DOTPLOT, "fisher_pval.png"), plot = pval_plot, width = plot_width, height = 6, dpi = 600)
+
+pval_plot_2 <- ggplot(real_surv_summary_table, aes(x = expNames, y = log.rank.p.val)) +
+            geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue", linewidth = 1) +
+            geom_hline(yintercept = -log10(N1_pval), linetype = "dashed", color = "red", linewidth = 1) + 
+            geom_point(size = 2, position = position_dodge(width = 0.2)) +  # Dot plot
+            labs(y = expression(-log[10](p-value)), x = NULL) +  # Axes labels
+            theme(panel.background = element_rect(fill = "white"),
+                  panel.grid.major.y = element_line(color = "grey90"),
+                  axis.line = element_line(color = "black"), 
+                  axis.text.x = element_text(angle = 90, hjust = 1, size = 12),
+                  axis.text.y = element_text(size = 12),
+                  #axis.text.x = element_blank(),
+                  legend.title = element_blank()
+                  ) + 
+            coord_cartesian(ylim = c(0, 9))
+ggsave(paste0(PATH_FIG_DOTPLOT, "log_rank_pval.png"), plot = pval_plot_2, width = plot_width, height = 6, dpi = 600)
+
+HR_plot <- ggplot(real_surv_summary_table, aes(x = expNames, y = HR)) +
+            geom_hline(yintercept = 1, linetype = "dashed", color = "blue", linewidth = 1) + 
+            geom_hline(yintercept = N1_hazard_ratio, linetype = "dashed", color = "red", linewidth = 1) + 
+            geom_point(size = 2, position = position_dodge(width = 0.2)) +  # Dot plot
+            geom_errorbar(aes(ymin = low.HR, ymax = high.HR), width = 0.2) +  # Error bars
+            labs(y = "Hazard ratio", x = NULL) +  # Axes labels
+            theme(panel.background = element_rect(fill = "white"), 
+                  panel.grid.major.y = element_line(color = "grey90"),
+                  axis.line = element_line(color = "black"), 
+                  axis.text.x = element_text(angle = 90, hjust = 1, size = 12),
+                  axis.text.y = element_text(size = 12),
+                  #axis.text.x = element_blank(),
+                  legend.title = element_blank()
+                  ) + 
+            coord_cartesian(ylim = c(0, 5)) + 
+            scale_color_manual(values = colors)
+ggsave(paste0(PATH_FIG_DOTPLOT, "hazard_ratio.png"), plot = HR_plot, width = plot_width, height = 6, dpi = 600)
+```

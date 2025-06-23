@@ -1,0 +1,524 @@
+---
+title: "4. Single-cell analysis (Endothelial cells)"
+output: html_document
+date: "2025-05-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load global configuration
+```{r}
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/global_config.R")
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/sc_config.R")
+```
+
+#### ENDOTHELIAL CELLS #####
+```{r}
+set.seed(3)
+RP_Endothelial_sign <- subset(chen_primaries, subset = celltype=="Endothelial",  features = signature_chen)
+RP_Endothelial_sign <- FindVariableFeatures(RP_Endothelial_sign, selection.method = "vst")
+RP_Endothelial_sign <- ScaleData(RP_Endothelial_sign)
+RP_Endothelial_sign <- RunPCA(RP_Endothelial_sign, features = VariableFeatures(RP_Endothelial_sign))
+
+std <- Stdev(RP_Endothelial_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Endothelial_pca_loadings_sign <- Loadings(object = RP_Endothelial_sign, reduction = "pca")
+Endothelial_pca_embeddings_sign <- data.frame(Embeddings(object = RP_Endothelial_sign, reduction = "pca"))
+
+# write.csv(Endothelial_pca_loadings_sign[,c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure11_right_Data", ".csv"))
+# write.csv(Endothelial_pca_embeddings_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure11_left_Data", ".csv"))
+
+Endothelial_dev <- rownames(Endothelial_pca_embeddings_sign[(Endothelial_pca_embeddings_sign$PC_1<=-2),])
+
+plot1 <- DimPlot(RP_Endothelial_sign, cells.highlight = Endothelial_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Endothelial", "Endothelial_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+plot2 <- VizDimLoadings(RP_Endothelial_sign, dims = 2, reduction = "pca") + xlab("PC2") + theme(
+  axis.text.y = element_text(family = "sans", face = "italic"))
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1.1,0.9))
+# ggsave(paste0(PATH_FIG_SCMARKERS, "SupplementaryFigure11_SC_Endothelial_withdoublets", ".svg"), plot=g , width = 6, height = 5)
+```
+
+```{r}
+RP_Endothelial_random_sign <- subset(chen_primaries, subset = celltype=="Endothelial",features = random_signature)
+RP_Endothelial_random_sign <- FindVariableFeatures(RP_Endothelial_random_sign, selection.method = "vst")
+RP_Endothelial_random_sign <- ScaleData(RP_Endothelial_random_sign)
+RP_Endothelial_random_sign <- RunPCA(RP_Endothelial_random_sign, features = VariableFeatures(RP_Endothelial_random_sign))
+
+std <- Stdev(RP_Endothelial_random_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Endothelial_pca_loadings_random_sign <- Loadings(object = RP_Endothelial_random_sign, reduction = "pca")
+Endothelial_pca_embeddings_random_sign <- data.frame(Embeddings(object = RP_Endothelial_random_sign, reduction = "pca"))
+# write.csv(Endothelial_pca_embeddings_random_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure92left_Data", ".csv"))
+
+plot1 <- DimPlot(RP_Endothelial_random_sign, cells.highlight = Endothelial_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Endothelial", "Endothelial_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+
+RP_Endothelial_all_genes <- subset(chen_primaries, subset = celltype=="Endothelial")
+RP_Endothelial_all_genes <- FindVariableFeatures(RP_Endothelial_all_genes, selection.method = "vst")
+RP_Endothelial_all_genes <- ScaleData(RP_Endothelial_all_genes)
+RP_Endothelial_all_genes <- RunPCA(RP_Endothelial_all_genes, features = VariableFeatures(RP_Endothelial_all_genes))
+
+std <- Stdev(RP_Endothelial_all_genes, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Endothelial_pca_loadings_all_genes <- Loadings(object = RP_Endothelial_all_genes, reduction = "pca")
+Endothelial_pca_embeddings_all_genes <- data.frame(Embeddings(object = RP_Endothelial_all_genes, reduction = "pca"))
+# write.csv(Endothelial_pca_embeddings_all_genes[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure92right_Data", ".csv"))
+
+plot2 <- DimPlot(RP_Endothelial_all_genes, cells.highlight = Endothelial_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Endothelial", "Endothelial_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1,1))
+# ggsave(paste0(PATH_FIG_SCMARKERS, "SC_Endothelial_random_all", ".svg"), plot=g , width = 10, height = 5)
+```
+
+```{r}
+RP_Endothelial <- subset(chen_primaries, subset = celltype=="Endothelial")
+Endothelial_dev_markers_sign <- FindMarkers(RP_Endothelial, ident.1 = Endothelial_dev, 
+                                            features = signature_chen, only.pos = TRUE)
+Endothelial_dev_markers_sign <- Endothelial_dev_markers_sign[Endothelial_dev_markers_sign$p_val_adj<0.05,]
+Endothelial_dev_markers_all <- FindMarkers(RP_Endothelial, ident.1 = Endothelial_dev, only.pos = TRUE)
+Endothelial_dev_markers_all <- Endothelial_dev_markers_all[Endothelial_dev_markers_all$p_val_adj<0.05,]
+Endothelial_dev_markers_sign <- Endothelial_dev_markers_sign[order(Endothelial_dev_markers_sign$p_val_adj, Endothelial_dev_markers_sign$avg_log2FC),]
+
+Endothelial_dev_markers_all["sign"] <- ifelse(rownames(Endothelial_dev_markers_all)%in%signature_chen, TRUE, FALSE)
+# write.table(Endothelial_dev_markers_all, paste0(PATH_DESEQ2, "Endothelial_dev_findmarkers_all", ".tsv"), sep="\t", row.names = T)
+
+dim(Endothelial_dev_markers_sign)
+dim(Endothelial_dev_markers_all)
+```
+
+```{r}
+chen_RP_Endothelial_dev <- chen_primaries
+chen_RP_Endothelial_dev$cell.type <- ifelse(colnames(chen_RP_Endothelial_dev) %in% Endothelial_dev, "Endothelial_dev", chen_RP_Endothelial_dev$celltype)
+Idents(chen_RP_Endothelial_dev) = chen_RP_Endothelial_dev$cell.type
+sorted_idents <- c("Luminal",  "Basal/Intermediate", 'Fibroblast','Endothelial', "Endothelial_dev",  'Monocyte', 'Mast', 'T','B')
+Idents(chen_RP_Endothelial_dev) <- factor(x =Idents(chen_RP_Endothelial_dev), levels = sorted_idents)
+
+g <- DotPlot(chen_RP_Endothelial_dev, features = rownames(Endothelial_dev_markers_sign[order(Endothelial_dev_markers_sign$avg_log2FC),]))+ RotatedAxis() + coord_flip()
+# ggsave(paste0(PATH_FIG_DOTPLOT, "Endothelial_dotplot", ".svg"), plot=g , width = 6, height = 6)
+```
+
+```{r}
+Endothelial_res = Endothelial_dev_markers_all
+Endothelial_res$gene = rownames(Endothelial_res)
+Endothelial_res <- Endothelial_res[,c("gene", "avg_log2FC")]
+row.names(Endothelial_res) <- NULL
+Endothelial_ranks <- deframe(Endothelial_res)
+
+pathways.hallmark <- gmtPathways(paste0(PATH_DATA, "h.all.v2023.2.Hs.symbols.gmt"))
+Endothelial_markers_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=Endothelial_ranks, nperm=1000)
+Endothelial_markers_fgsea_res <- Endothelial_markers_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+Endothelial_markers_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+Endothelial_markers_fgsea_res <- data.frame(Endothelial_markers_fgsea_res)
+
+check_overlap <- function(leading_genes, signature_genes) {
+  return(intersect(leading_genes, signature_genes))
+}
+
+Endothelial_markers_fgsea_res$overlap <- sapply(Endothelial_markers_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+Endothelial_markers_fgsea_res$leadingEdge <- sapply(Endothelial_markers_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+Endothelial_markers_fgsea_res$overlap <- sapply(Endothelial_markers_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+Endothelial_markers_fgsea_res <- Endothelial_markers_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+# write.table(Endothelial_markers_fgsea_res, paste0(PATH_GSEA, "Endothelial_markers_fgsea_res_all", ".tsv"), sep="\t", row.names = F)
+
+Endothelial_gsea <- ggplot(Endothelial_markers_fgsea_res, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+ggsave(paste0(PATH_FIG_GSEA, "Endothelial_gsea_all", ".svg"), plot=Endothelial_gsea , width = 8, height = 10)
+
+
+Endothelial_res = Endothelial_dev_markers_sign
+Endothelial_res$gene = rownames(Endothelial_res)
+Endothelial_res <- Endothelial_res[,c("gene", "avg_log2FC")]
+row.names(Endothelial_res) <- NULL
+Endothelial_ranks <- deframe(Endothelial_res)
+
+pathways.hallmark <- gmtPathways(paste0(PATH_DATA, "h.all.v2023.2.Hs.symbols.gmt"))
+Endothelial_markers_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=Endothelial_ranks, nperm=1000)
+Endothelial_markers_fgsea_res <- Endothelial_markers_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+Endothelial_markers_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+Endothelial_markers_fgsea_res <- data.frame(Endothelial_markers_fgsea_res)
+
+check_overlap <- function(leading_genes, signature_genes) {
+  return(intersect(leading_genes, signature_genes))
+}
+
+Endothelial_markers_fgsea_res$overlap <- sapply(Endothelial_markers_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+Endothelial_markers_fgsea_res$leadingEdge <- sapply(Endothelial_markers_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+Endothelial_markers_fgsea_res$overlap <- sapply(Endothelial_markers_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+Endothelial_markers_fgsea_res <- Endothelial_markers_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+# write.table(Endothelial_markers_fgsea_res, paste0(PATH_GSEA, "Endothelial_markers_fgsea_res_sign", ".tsv"), sep="\t", row.names = F)
+
+Endothelial_gsea <- ggplot(Endothelial_markers_fgsea_res, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+# ggsave(paste0(PATH_FIG_GSEA, "Endothelial_gsea_sign", ".svg"), plot=Endothelial_gsea , width = 8, height = 10)
+```
+
+
+
+```{r}
+Endothelial_Jef<- readRDS(paste0(PATH_DATA, "231005_seuratObj_chen_endothelial_no_metastatic.rds"))
+Endothelial_Jef <- subset(Endothelial_Jef, subset = sample.id != "SC171")
+Endothelial_Jef_info <- Endothelial_Jef@meta.data
+table(Endothelial_Jef_info[rownames(Endothelial_Jef_info)%in%Endothelial_dev,]$cell.type.jef.L2)
+table(Endothelial_Jef_info$cell.type.jef.L2)
+length(Endothelial_dev)
+
+status <- as.character(Endothelial_Jef@meta.data$status)
+status[status=="malignant"] <- "cancerous"
+status[status=="non-malignant"] <- "non-cancerous"
+```
+
+
+```{r}
+Endothelial_Jef$cell.type <- ifelse(rownames(Endothelial_Jef_info) %in% Endothelial_dev, "Endothelial_dev", "Endothelial")
+Endothelial_Jef$cell.type <- factor(Endothelial_Jef$cell.type)
+Idents(Endothelial_Jef) <-Endothelial_Jef$cell.type 
+Endothelial_Jef$cell.subtype <- Endothelial_Jef_info$cell.type.jef.L2
+Endothelial_Jef <- subset(Endothelial_Jef, subset = cell.subtype %in%  c("Arterial ECs", 
+                                                                      "ECs (Unfolded prot resp)", 
+                                                                      "Endothelial-Pericyte", 
+                                                                      "HEVs and Venous ECs",
+                                                                      "Tip cells"))
+Endothelial_Jef$cell.subtype <- factor(Endothelial_Jef$cell.subtype, levels =  c("Arterial ECs", 
+                                                                      "ECs (Unfolded prot resp)", 
+                                                                      "Endothelial-Pericyte", 
+                                                                      "HEVs and Venous ECs",
+                                                                      "Tip cells"))
+Endothelial_Jef$cell.status <- factor(status)
+Endothelial_Jef_info <- Endothelial_Jef@meta.data
+
+mat <- table(Endothelial_Jef_info$seurat_clusters, Endothelial_Jef_info$cell.subtype)
+mat <- scale(mat)
+Idents(Endothelial_Jef) <- "cell.type"
+
+Endothelial_markers_original <- c("RHOB", "PTGS2", "S100A6", "MEG3", "FAM107A", "MMP2", "RND3", "ID4", "FGF18", "CTGF", "GAS6", "MYADM", "GADD45A", "PTRF", "PTHLH", "FOXC1", "CLU", "MSRB3", "TNS1", "TIMP3", "EHD2", "TINAGL1", "GPX3", "PIP5K1B", "TCF7L1", "MXRA7")
+Endothelial_markers <- Endothelial_markers_original
+# Endothelial_markers <- rownames(Endothelial_dev_markers_sign[order(-Endothelial_dev_markers_sign$avg_log2FC),])
+
+Endothelial_labels_colors = signature_df[Endothelial_markers,"color"]
+
+tip <- c('ESM1', 'INSR')
+aec <- c('FBLN5', 'GJA5', 'FN1')
+hev <-  c('ACKR1', 'SELP')
+lec <- c('PROX1')
+peri <- c('NDUFA4L2', 'ACTA2', 'RGS5', 'HIGD1B')
+
+Endothelial_litterature_markers <-c(aec, peri, hev, lec, tip)
+Endothelial_litterature_markers <- intersect(Endothelial_litterature_markers, rownames(Endothelial_Jef))
+
+# genes <- unlist(Endothelial_litterature_markers) # %>% unique()
+
+columns_to_plot <- c("cell.type", "cell.subtype", "cell.status") 
+Endothelial_Jef_info <- Endothelial_Jef_info[, columns_to_plot]
+# write.csv(Endothelial_Jef_info, paste0(PATH_FIGSHARE, "SupplementaryFigure94middle_Data", ".csv"))
+
+annot_cols <- list(
+  cell.type = setNames(c("blue", "red"), levels(Endothelial_Jef_info$cell.type)),
+  cell.subtype = setNames(c("orange", "purple", "green", "darkblue", "gray"),
+                          levels(Endothelial_Jef_info$cell.subtype)),
+    cell.status = setNames(c("red", "blue", "grey"), levels(Luminal_Jef_info$cell.status)))
+
+heatmapAnnot <- rowAnnotation(
+  df = Endothelial_Jef_info,
+  show_annotation_name = TRUE,
+  show_legend = TRUE,
+  col = annot_cols)
+
+Endothelial_Jef <- ScaleData(Endothelial_Jef, features = rownames(Endothelial_Jef), verbose = FALSE)
+
+# aec
+genes <- unlist(intersect(Endothelial_litterature_markers, rownames(Endothelial_Jef)))
+plot_mat = t(as.matrix(Endothelial_Jef[["RNA"]]@scale.data[genes,]))
+# write.csv(plot_mat, paste0(PATH_FIGSHARE, "SupplementaryFigure94left_Data", ".csv"))
+
+ht1 <- Heatmap(plot_mat,
+              show_column_names = T, 
+              show_row_names = F,
+              column_title_gp = gpar(fontsize = 6),
+              row_split = Endothelial_Jef_info[,c("cell.type", "cell.subtype")],
+              row_title = NULL,
+              clustering_method_rows = "complete",
+              cluster_columns = F, 
+              cluster_rows = F,
+              col = circlize::colorRamp2(c(-2,0,2), colors = c("#18528f", "white", "#a81d1d")),
+              left_annotation = heatmapAnnot,
+              show_heatmap_legend = F,
+              column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"))
+
+# Endothelial_markers
+plot_mat = t(as.matrix(Endothelial_Jef[["RNA"]]@scale.data[Endothelial_markers,]))
+# write.csv(plot_mat, paste0(PATH_FIGSHARE, "SupplementaryFigure94right_Data", ".csv"))
+
+ht2 <- Heatmap(matrix = plot_mat, 
+               show_column_names = T, 
+               show_row_names = F,
+               column_title_gp = gpar(fontsize = 6, rot = 45),
+               row_split = Endothelial_Jef_info[,c("cell.type", "cell.subtype")],
+               row_title = NULL,
+               clustering_method_rows = "complete",
+               cluster_columns = F, 
+               cluster_rows = F,
+               col = circlize::colorRamp2(c(-2,0,2), colors = c("#18528f", "white", "#a81d1d")),
+               show_heatmap_legend = T,
+               name = "expression.level",
+               column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic", 
+                                      col=Endothelial_labels_colors))
+ht_list <- ht2 + ht1
+# pdf(paste0(PATH_FIG_HEATMAPS, "Endothelial_markers_sc", ".pdf"), width = 8, height = 6)
+# draw(ht_list)
+# dev.off()
+# ht_list
+```
+
+
+# Remove endothelial pericyte and previously identified deviating endothelial cells
+```{r}
+Endothelial_Jef<- readRDS(paste0(PATH_DATA, "231005_seuratObj_chen_endothelial_no_metastatic.rds"))
+Endothelial_Jef <- subset(Endothelial_Jef, subset = sample.id != "SC171")
+Endothelial_Jef_info <- Endothelial_Jef@meta.data
+
+Endothelial_pca_embeddings_sign <- read.csv(paste0(PATH_FIGSHARE, "SupplementaryFigure11_left_Data", ".csv"), row.names=1)
+Endothelial_dev <- rownames(Endothelial_pca_embeddings_sign[(Endothelial_pca_embeddings_sign$PC_1<=-2),])
+
+status <- as.character(Endothelial_Jef@meta.data$status)
+status[status=="malignant"] <- "cancerous"
+status[status=="non-malignant"] <- "non-cancerous"
+
+Endothelial_Jef_info <- Endothelial_Jef@meta.data
+Endothelial_Jef$cell.type <- ifelse(rownames(Endothelial_Jef_info) %in% Endothelial_dev, "Endothelial_dev", "Endothelial")
+Endothelial_Jef$cell.type <- factor(Endothelial_Jef$cell.type)
+Idents(Endothelial_Jef) <-Endothelial_Jef$cell.type 
+Endothelial_Jef$cell.subtype <- Endothelial_Jef_info$cell.type.jef.L2
+Endothelial_Jef <- subset(Endothelial_Jef, subset = cell.subtype %in%  c("Arterial ECs", 
+                                                                      "ECs (Unfolded prot resp)", 
+                                                                      "Endothelial-Pericyte", 
+                                                                      "HEVs and Venous ECs",
+                                                                      "Tip cells"))
+Endothelial_Jef$cell.subtype <- factor(Endothelial_Jef$cell.subtype, levels =  c("Arterial ECs", 
+                                                                      "ECs (Unfolded prot resp)", 
+                                                                      "Endothelial-Pericyte", 
+                                                                      "HEVs and Venous ECs",
+                                                                      "Tip cells"))
+Endothelial_Jef$cell.status <- factor(status)
+Endothelial_Jef_info <- Endothelial_Jef@meta.data
+
+tokeep <- rownames(Endothelial_Jef_info[(Endothelial_Jef_info$cell.subtype!="Endothelial-Pericyte")
+                                         &(Endothelial_Jef_info$cell.type!="Endothelial_dev"),])
+
+RP_Endothelial_sign <- subset(chen_primaries, subset = celltype =="Endothelial",  features = signature_chen)
+RP_Endothelial_sign <- RP_Endothelial_sign[,colnames(RP_Endothelial_sign) %in% tokeep]
+RP_Endothelial_sign <- FindVariableFeatures(RP_Endothelial_sign, selection.method = "vst")
+RP_Endothelial_sign <- ScaleData(RP_Endothelial_sign)
+RP_Endothelial_sign <- RunPCA(RP_Endothelial_sign, features = VariableFeatures(RP_Endothelial_sign))
+
+std <- Stdev(RP_Endothelial_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Endothelial_pca_loadings_sign <- Loadings(object = RP_Endothelial_sign, reduction = "pca")
+Endothelial_pca_embeddings_sign <- data.frame(Embeddings(object = RP_Endothelial_sign, reduction = "pca"))
+genes_ordered_by_loadings <- rownames(Endothelial_pca_loadings_sign[order(abs(Endothelial_pca_loadings_sign[, "PC_2"]), decreasing = TRUE),])
+
+# write.csv(Endothelial_pca_loadings_sign[,c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "Figure5A_right_Data", ".csv"))
+# write.csv(Endothelial_pca_embeddings_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "Figure5A_left_Data", ".csv"))
+
+Endothelial_dev <- rownames(Endothelial_pca_embeddings_sign[(Endothelial_pca_embeddings_sign$PC_2<=-2.5),])
+
+plot1 <- DimPlot(RP_Endothelial_sign, cells.highlight = Endothelial_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Endothelial", "Endothelial_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+plot2 <- VizDimLoadings(RP_Endothelial_sign, dims = 2, reduction = "pca") + xlab("PC2") + theme(
+  axis.text.y = element_text(family = "sans", face = "italic"))
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1.1,0.9))
+# ggsave(paste0(PATH_FIG_SCMARKERS, "Figure5A_SC_Endothelial_withoutdoublets", ".svg"), plot=g , width = 6, height = 5)
+```
+
+```{r}
+tokeep <- rownames(Endothelial_Jef_info[(Endothelial_Jef_info$cell.subtype!="Endothelial-Pericyte")
+                                         &(Endothelial_Jef_info$cell.type!="Endothelial_dev"),])
+
+RP_Endothelial_random_sign <- subset(chen_primaries, subset = celltype=="Endothelial",features = random_signature)
+RP_Endothelial_random_sign <- RP_Endothelial_random_sign[,colnames(RP_Endothelial_random_sign) %in% tokeep]
+
+RP_Endothelial_random_sign <- FindVariableFeatures(RP_Endothelial_random_sign, selection.method = "vst")
+RP_Endothelial_random_sign <- ScaleData(RP_Endothelial_random_sign)
+RP_Endothelial_random_sign <- RunPCA(RP_Endothelial_random_sign, features = VariableFeatures(RP_Endothelial_random_sign))
+
+std <- Stdev(RP_Endothelial_random_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Endothelial_pca_loadings_random_sign <- Loadings(object = RP_Endothelial_random_sign, reduction = "pca")
+Endothelial_pca_embeddings_random_sign <- data.frame(Embeddings(object = RP_Endothelial_random_sign, reduction = "pca"))
+# write.csv(Endothelial_pca_embeddings_random_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure11.1_left_Data", ".csv"))
+
+plot1 <- DimPlot(RP_Endothelial_random_sign, cells.highlight = Endothelial_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Endothelial", "Endothelial_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+
+RP_Endothelial_all_genes <- subset(chen_primaries, subset = celltype=="Endothelial")
+RP_Endothelial_all_genes <- FindVariableFeatures(RP_Endothelial_all_genes, selection.method = "vst")
+RP_Endothelial_all_genes <- ScaleData(RP_Endothelial_all_genes)
+RP_Endothelial_all_genes <- RunPCA(RP_Endothelial_all_genes, features = VariableFeatures(RP_Endothelial_all_genes))
+
+std <- Stdev(RP_Endothelial_all_genes, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Endothelial_pca_loadings_all_genes <- Loadings(object = RP_Endothelial_all_genes, reduction = "pca")
+Endothelial_pca_embeddings_all_genes <- data.frame(Embeddings(object = RP_Endothelial_all_genes, reduction = "pca"))
+# write.csv(Endothelial_pca_embeddings_all_genes[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure11.1_right_Data", ".csv"))
+
+plot2 <- DimPlot(RP_Endothelial_all_genes, cells.highlight = Endothelial_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Endothelial", "Endothelial_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1,1))
+# ggsave(paste0(PATH_FIG_SCMARKERS, "SupplementaryFigure11.1_SC_Endothelial_withoudoublets_random_all", ".svg"), plot=g , width = 10, height = 5)
+```
+
+# Markers of Endothelial cells excluding doublets, in our signature and using all genes
+```{r}
+RP_Endothelial <- subset(chen_primaries, subset = celltype=="Endothelial")
+RP_Endothelial <- RP_Endothelial[,colnames(RP_Endothelial) %in% tokeep]
+Endothelial_dev_markers_sign <- FindMarkers(RP_Endothelial, ident.1 = Endothelial_dev, only.pos=TRUE, features = signature_chen)
+Endothelial_dev_markers_sign <- Endothelial_dev_markers_sign[Endothelial_dev_markers_sign$p_val_adj<0.001,] # 910
+Endothelial_dev_markers_all <- FindMarkers(RP_Endothelial, ident.1 = Endothelial_dev, only.pos=TRUE)
+Endothelial_dev_markers_all <- Endothelial_dev_markers_all[Endothelial_dev_markers_all$p_val_adj<0.001,] # 39
+dim(Endothelial_dev_markers_sign)
+dim(Endothelial_dev_markers_all)
+
+# Endothelial_markers <- read.csv(paste0(PATH_SCMARKERS, "Markers_Endothelial_filtered.csv"))$Genes
+# select genes that are specific to endothelial cells
+# Endothelial_dev_markers_final <- Endothelial_dev_markers_sign[rownames(Endothelial_dev_markers_sign)%in%Endothelial_markers,]
+Endothelial_dev_markers_all <- Endothelial_dev_markers_all[order(-Endothelial_dev_markers_all$avg_log2FC),]
+Endothelial_dev_markers_all["overlap_aggressiveness_signature"] <- ifelse(rownames(Endothelial_dev_markers_all)%in%signature_chen, TRUE, FALSE)
+Endothelial_dev_markers_all["top100_loadings"] <- ifelse(rownames(Endothelial_dev_markers_all)%in%genes_ordered_by_loadings[1:100], TRUE, FALSE) # 39
+Endothelial_dev_markers_all["top50_loadings"] <- ifelse(rownames(Endothelial_dev_markers_all)%in%genes_ordered_by_loadings[1:50], TRUE, FALSE) # 35
+Endothelial_dev_markers_all["top30_loadings"] <- ifelse(rownames(Endothelial_dev_markers_all)%in%genes_ordered_by_loadings[1:30], TRUE, FALSE) # 27
+Endothelial_dev_markers_all["overlap_decipher"] <- ifelse(rownames(Endothelial_dev_markers_all)%in%decipher, TRUE, FALSE)
+Endothelial_dev_markers_all["overlap_prostadiag"] <- ifelse(rownames(Endothelial_dev_markers_all)%in%prostadiag, TRUE, FALSE)
+Endothelial_dev_markers_all["olverap_oncotypeDX"] <- ifelse(rownames(Endothelial_dev_markers_all)%in%oncotypeDX, TRUE, FALSE)
+Endothelial_dev_markers_all["olverap_polaris"] <- ifelse(rownames(Endothelial_dev_markers_all)%in%polaris, TRUE, FALSE)
+write.table(Endothelial_dev_markers_all, paste0(PATH_DESEQ2, "SupplementaryTable14.1_Endothelial_withoutdoublets_dev_findmarkers_all", ".csv"), sep=",", row.names = T)
+
+final_markers <- rownames(Endothelial_dev_markers_all[Endothelial_dev_markers_all$top30_loadings,])
+```
+
+
+```{r}
+Endothelial_res = Endothelial_dev_markers_all
+Endothelial_res$gene = rownames(Endothelial_res)
+Endothelial_res <- Endothelial_res[,c("gene", "avg_log2FC")]
+row.names(Endothelial_res) <- NULL
+Endothelial_ranks <- deframe(Endothelial_res)
+
+pathways.hallmark <- gmtPathways(paste0(PATH_DATA, "h.all.v2023.2.Hs.symbols.gmt"))
+Endothelial_markers_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=Endothelial_ranks, nperm=1000)
+Endothelial_markers_fgsea_res <- Endothelial_markers_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+Endothelial_markers_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+Endothelial_markers_fgsea_res <- data.frame(Endothelial_markers_fgsea_res)
+
+check_overlap <- function(leading_genes, signature_genes) {
+  return(intersect(leading_genes, signature_genes))
+}
+
+Endothelial_markers_fgsea_res$overlap <- sapply(Endothelial_markers_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+Endothelial_markers_fgsea_res$leadingEdge <- sapply(Endothelial_markers_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+Endothelial_markers_fgsea_res$overlap <- sapply(Endothelial_markers_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+Endothelial_markers_fgsea_res <- Endothelial_markers_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+write.table(Endothelial_markers_fgsea_res, paste0(PATH_GSEA, "Endothelial_withoutdoublets_markers_fgsea_res_all", ".csv"), sep=",", row.names = F)
+
+Endothelial_gsea <- ggplot(Endothelial_markers_fgsea_res, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+ggsave(paste0(PATH_FIG_GSEA, "Endothelial_nodoublets_gsea_all", ".svg"), plot=Endothelial_gsea , width = 8, height = 10)
+
+Endothelial_res = Endothelial_dev_markers_sign
+Endothelial_res$gene = rownames(Endothelial_res)
+Endothelial_res <- Endothelial_res[,c("gene", "avg_log2FC")]
+row.names(Endothelial_res) <- NULL
+Endothelial_ranks <- deframe(Endothelial_res)
+
+pathways.hallmark <- gmtPathways(paste0(PATH_DATA, "h.all.v2023.2.Hs.symbols.gmt"))
+Endothelial_markers_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=Endothelial_ranks, nperm=1000)
+Endothelial_markers_fgsea_res <- Endothelial_markers_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+Endothelial_markers_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+Endothelial_markers_fgsea_res <- data.frame(Endothelial_markers_fgsea_res)
+
+check_overlap <- function(leading_genes, signature_genes) {
+  return(intersect(leading_genes, signature_genes))
+}
+
+Endothelial_markers_fgsea_res$overlap <- sapply(Endothelial_markers_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+Endothelial_markers_fgsea_res$leadingEdge <- sapply(Endothelial_markers_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+Endothelial_markers_fgsea_res$overlap <- sapply(Endothelial_markers_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+Endothelial_markers_fgsea_res <- Endothelial_markers_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+write.table(Endothelial_markers_fgsea_res, paste0(PATH_GSEA, "SupplementaryTable14.2_Endothelial_withoutdoublets_markers_fgsea_res_sign", ".csv"), sep=",", row.names = F)
+
+Endothelial_gsea <- ggplot(Endothelial_markers_fgsea_res, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+ggsave(paste0(PATH_FIG_GSEA, "Endothelial_withoutdoublets_gsea_sign", ".svg"), plot=Endothelial_gsea , width = 8, height = 10)
+```
+
+# Are the markers specific to endothelial cells
+```{r}
+chen_RP_Endothelial_dev <- chen_primaries
+chen_RP_Endothelial_dev$cell.type <- ifelse(colnames(chen_RP_Endothelial_dev) %in% Endothelial_dev, "Endothelial_dev", chen_RP_Endothelial_dev$celltype)
+Idents(chen_RP_Endothelial_dev) = chen_RP_Endothelial_dev$cell.type
+sorted_idents <- c("Luminal",  "Basal/Intermediate", 'Fibroblast','Endothelial', "Endothelial_dev",  'Monocyte', 'Mast', 'T','B')
+Idents(chen_RP_Endothelial_dev) <- factor(x =Idents(chen_RP_Endothelial_dev), levels = sorted_idents)
+g <- DotPlot(chen_RP_Endothelial_dev, features = rev(intersect(genes_ordered_by_loadings, final_markers)))+ RotatedAxis() + coord_flip() + theme(axis.text.y = element_text(family = "sans", face = "italic"))
+write.csv(g$data, paste0(PATH_FIGSHARE, "SupplementaryFigure11.2_Endothelial_withoutdoublets_dotplot", ".csv"))
+ggsave(paste0(PATH_FIG_DOTPLOT, "SupplementaryFigure11.2_Endothelial_withoutdoublets_dotplot", ".svg"), plot=g , width = 6, height = 7)
+```

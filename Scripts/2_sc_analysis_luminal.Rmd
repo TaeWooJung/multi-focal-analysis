@@ -1,0 +1,302 @@
+---
+title: "2. Single-cell analysis (Luminal cells)"
+output: html_document
+date: "2025-05-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load global configuration
+```{r, warnings=FALSE}
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/global_config.R")
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/sc_config.R")
+```
+
+#### LUMINAL CELLS ####
+```{r}
+set.seed(3)
+RP_Luminal_sign <- subset(chen_primaries, subset = celltype=="Luminal",  features = signature_chen)
+RP_Luminal_sign <- FindVariableFeatures(RP_Luminal_sign, selection.method = "vst")
+RP_Luminal_sign <- ScaleData(RP_Luminal_sign)
+RP_Luminal_sign <- RunPCA(RP_Luminal_sign, features = VariableFeatures(RP_Luminal_sign))
+
+std <- Stdev(RP_Luminal_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Luminal_pca_loadings_sign <- Loadings(object = RP_Luminal_sign, reduction = "pca")
+Luminal_pca_embeddings_sign <- data.frame(Embeddings(object = RP_Luminal_sign, reduction = "pca"))
+genes_ordered_by_loadings <- rownames(Luminal_pca_loadings_sign[order(abs(Luminal_pca_loadings_sign[, "PC_1"]), decreasing = TRUE),])
+# write.csv(Luminal_pca_loadings_sign[,c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "Figure3A_bottom_Data", ".csv"))
+# write.csv(Luminal_pca_embeddings_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "Figure3A_top_Data", ".csv"))
+
+Luminal_dev <- rownames(Luminal_pca_embeddings_sign[Luminal_pca_embeddings_sign$PC_1>=3,])
+print(length(Luminal_dev))
+plot1 <- DimPlot(RP_Luminal_sign, cells.highlight = Luminal_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Luminal", "Luminal_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+plot2 <- VizDimLoadings(RP_Luminal_sign, dims = 1, reduction = "pca")+xlim(c(0.10, 0.25)) + xlab("PC1") + theme(
+  axis.text.y = element_text(family = "sans", face = "italic"))
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1.1,0.9))
+# ggsave(paste0(PATH_FIG_SCMARKERS, "Figure3A_SC_Luminal", ".svg"), plot=g , width = 6, height = 5)
+```
+
+```{r}
+RP_Luminal_random_sign <- subset(chen_primaries, subset = celltype=="Luminal",features = random_signature)
+RP_Luminal_random_sign <- FindVariableFeatures(RP_Luminal_random_sign, selection.method = "vst")
+RP_Luminal_random_sign <- ScaleData(RP_Luminal_random_sign)
+RP_Luminal_random_sign <- RunPCA(RP_Luminal_random_sign, features = VariableFeatures(RP_Luminal_random_sign))
+
+std <- Stdev(RP_Luminal_random_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Luminal_pca_loadings_random_sign <- Loadings(object = RP_Luminal_random_sign, reduction = "pca")
+Luminal_pca_embeddings_random_sign <- data.frame(Embeddings(object = RP_Luminal_random_sign, reduction = "pca"))
+
+# write.csv(Luminal_pca_embeddings_random_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure9.1_left_Data", ".csv"))
+
+plot1 <- DimPlot(RP_Luminal_random_sign, cells.highlight = Luminal_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Luminal", "Luminal_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+
+RP_Luminal_all_genes <- subset(chen_primaries, subset = celltype=="Luminal")
+RP_Luminal_all_genes <- FindVariableFeatures(RP_Luminal_all_genes, selection.method = "vst")
+RP_Luminal_all_genes <- ScaleData(RP_Luminal_all_genes)
+RP_Luminal_all_genes <- RunPCA(RP_Luminal_all_genes, features = VariableFeatures(RP_Luminal_all_genes))
+
+std <- Stdev(RP_Luminal_all_genes, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Luminal_pca_loadings_all_genes <- Loadings(object = RP_Luminal_all_genes, reduction = "pca")
+Luminal_pca_embeddings_all_genes <- data.frame(Embeddings(object = RP_Luminal_all_genes, reduction = "pca"))
+
+# write.csv(Luminal_pca_embeddings_all_genes[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure9.1_right_Data", ".csv"))
+
+plot2 <- DimPlot(RP_Luminal_all_genes, cells.highlight = Luminal_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Luminal", "Luminal_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1,1))
+# ggsave(paste0(PATH_FIG_SCMARKERS, "SupplementaryFigure9.1_SC_Luminal_random_all", ".svg"), plot=g , width = 10, height = 5)
+```
+
+
+```{r}
+RP_luminal <- subset(chen_primaries, subset = celltype=="Luminal")
+Luminal_dev_markers_sign <- FindMarkers(RP_luminal, ident.1 = Luminal_dev, features = signature_chen, only.pos=TRUE)
+Luminal_dev_markers_sign <- Luminal_dev_markers_sign[Luminal_dev_markers_sign$p_val_adj<0.001,] # 68
+Luminal_dev_markers_all <- FindMarkers(RP_luminal, ident.1 = Luminal_dev, only.pos=TRUE)
+Luminal_dev_markers_all <- Luminal_dev_markers_all[Luminal_dev_markers_all$p_val_adj<0.001,] # 1286
+dim(Luminal_dev_markers_sign)
+dim(Luminal_dev_markers_all)
+
+# Luminal_markers <- read.csv(paste0(PATH_SCMARKERS, "Markers_Luminal_filtered.csv"))$Genes
+# select genes that are specific to luminal cells
+# Luminal_dev_markers_final <- Luminal_dev_markers_sign[rownames(Luminal_dev_markers_sign)%in%Luminal_markers,]
+Luminal_dev_markers_all <- Luminal_dev_markers_all[order(-Luminal_dev_markers_all$avg_log2FC),]
+Luminal_dev_markers_all["overlap_aggressiveness_signature"] <- ifelse(rownames(Luminal_dev_markers_all)%in%signature_chen, TRUE, FALSE)
+# Luminal_dev_markers_all["specific"] <- ifelse(rownames(Luminal_dev_markers_all)%in%Luminal_markers, TRUE, FALSE)
+Luminal_dev_markers_all["top100_loadings"] <- ifelse(rownames(Luminal_dev_markers_all)%in%genes_ordered_by_loadings[1:100], TRUE, FALSE) # 68
+Luminal_dev_markers_all["top50_loadings"] <- ifelse(rownames(Luminal_dev_markers_all)%in%genes_ordered_by_loadings[1:50], TRUE, FALSE) # 46
+Luminal_dev_markers_all["top30_loadings"] <- ifelse(rownames(Luminal_dev_markers_all)%in%genes_ordered_by_loadings[1:30], TRUE, FALSE) # 30
+Luminal_dev_markers_all["overlap_decipher"] <- ifelse(rownames(Luminal_dev_markers_all)%in%decipher, TRUE, FALSE)
+Luminal_dev_markers_all["overlap_prostadiag"] <- ifelse(rownames(Luminal_dev_markers_all)%in%prostadiag, TRUE, FALSE)
+Luminal_dev_markers_all["olverap_oncotypeDX"] <- ifelse(rownames(Luminal_dev_markers_all)%in%oncotypeDX, TRUE, FALSE)
+Luminal_dev_markers_all["olverap_polaris"] <- ifelse(rownames(Luminal_dev_markers_all)%in%polaris, TRUE, FALSE)
+# write.table(Luminal_dev_markers_all, paste0(PATH_DESEQ2, "SupplementaryTable12.1_Luminal_dev_findmarkers_all", ".csv"), sep=",", row.names = T)
+final_markers <- rownames(Luminal_dev_markers_all[Luminal_dev_markers_all$top30_loadings,])
+```
+
+```{r}
+Luminal_res = Luminal_dev_markers_all
+Luminal_res$gene = rownames(Luminal_res)
+Luminal_res <- Luminal_res[,c("gene", "avg_log2FC")]
+row.names(Luminal_res) <- NULL
+Luminal_ranks <- deframe(Luminal_res)
+
+pathways.hallmark <- gmtPathways(paste0(PATH_DATA, "h.all.v2023.2.Hs.symbols.gmt"))
+Luminal_markers_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=Luminal_ranks, nperm=1000)
+Luminal_markers_fgsea_res <- Luminal_markers_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+Luminal_markers_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+Luminal_markers_fgsea_res <- data.frame(Luminal_markers_fgsea_res)
+
+check_overlap <- function(leading_genes, signature_genes) {
+  return(intersect(leading_genes, signature_genes))
+}
+
+Luminal_markers_fgsea_res$overlap <- sapply(Luminal_markers_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+Luminal_markers_fgsea_res$leadingEdge <- sapply(Luminal_markers_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+Luminal_markers_fgsea_res$overlap <- sapply(Luminal_markers_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+Luminal_markers_fgsea_res <- Luminal_markers_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+write.table(Luminal_markers_fgsea_res, paste0(PATH_GSEA, "SupplementaryTable12.2_Luminal_markers_fgsea_res_all", ".csv"), sep=",", row.names = F)
+
+Luminal_gsea <- ggplot(na.omit(Luminal_markers_fgsea_res), aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+ggsave(paste0(PATH_FIG_GSEA, "Luminal_gsea_all", ".svg"), plot=Luminal_gsea , width = 8, height = 10)
+```
+
+```{r}
+Luminal_res = Luminal_dev_markers_sign
+Luminal_res$gene = rownames(Luminal_res)
+Luminal_res <- Luminal_res[,c("gene", "avg_log2FC")]
+row.names(Luminal_res) <- NULL
+Luminal_ranks <- deframe(Luminal_res)
+
+Luminal_markers_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=Luminal_ranks, nperm=1000)
+Luminal_markers_fgsea_res <- Luminal_markers_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+Luminal_markers_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+Luminal_markers_fgsea_res <- data.frame(Luminal_markers_fgsea_res)
+
+check_overlap <- function(leading_genes, signature_genes) {
+  return(intersect(leading_genes, signature_genes))
+}
+
+Luminal_markers_fgsea_res$overlap <- sapply(Luminal_markers_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+Luminal_markers_fgsea_res$leadingEdge <- sapply(Luminal_markers_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+Luminal_markers_fgsea_res$overlap <- sapply(Luminal_markers_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+Luminal_markers_fgsea_res <- Luminal_markers_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+# write.table(Luminal_markers_fgsea_res, paste0(PATH_GSEA, "Luminal_markers_fgsea_res_sign", ".csv"), sep=",", row.names = F)
+
+Luminal_gsea <- ggplot(Luminal_markers_fgsea_res, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+# ggsave(paste0(PATH_FIG_GSEA, "Luminal_gsea_sign", ".svg"), plot=Luminal_gsea , width = 8, height = 10)
+```
+
+# Are the markers specific to luminal cells
+```{r}
+chen_RP_Luminal_dev <- chen_primaries
+chen_RP_Luminal_dev$cell.type <- ifelse(colnames(chen_RP_Luminal_dev) %in% Luminal_dev, "Luminal_dev", chen_RP_Luminal_dev$celltype)
+Idents(chen_RP_Luminal_dev) = chen_RP_Luminal_dev$cell.type
+sorted_idents <- c("Luminal", "Luminal_dev", "Basal/Intermediate", 'Fibroblast',  'Endothelial', 'Monocyte', 'Mast', 'T','B')
+Idents(chen_RP_Luminal_dev) <- factor(x =Idents(chen_RP_Luminal_dev), levels = sorted_idents)
+g <- DotPlot(chen_RP_Luminal_dev, features = rev(intersect(genes_ordered_by_loadings, final_markers)))+ RotatedAxis() + coord_flip() + theme(axis.text.y = element_text(family = "sans", face = "italic"))
+# write.csv(g$data, paste0(PATH_FIGSHARE, "SupplementaryFigure9.2_Luminal_dotplot", ".csv"))
+# ggsave(paste0(PATH_FIG_DOTPLOT, "SupplementaryFigure9.2_Luminal_dotplot", ".svg"), plot=g , width = 6, height = 7)
+```
+
+```{r}
+RP_luminal_annot = RP_luminal@meta.data
+table(RP_luminal_annot$status[rownames(RP_luminal_annot)%in%Luminal_dev]) # Deviating luminal cells
+table(RP_luminal_annot$status[rownames(RP_luminal_annot)%in%Luminal_dev])/
+  sum(table(RP_luminal_annot$status[rownames(RP_luminal_annot)%in%Luminal_dev]))*100  # Non-deviating luminal cells
+table(RP_luminal_annot$status[!rownames(RP_luminal_annot)%in%Luminal_dev])
+table(RP_luminal_annot$status) # All luminal cells
+table(RP_luminal_annot$status)/sum(table(RP_luminal_annot$status))*100
+
+cellcycle_cells <- read.csv(paste0(PATH_DATA, "cell_annotation.csv")) 
+cellcycle_cells$cellID <- gsub("-", ".", cellcycle_cells$cellID) 
+cellcycle_cells <- cellcycle_cells[(!cellcycle_cells$sampleID %in% c("SC171", "SC172")) & (cellcycle_cells$type == "Cell Cycle"), ] 
+table(cellcycle_cells$status) # Cell cycle cells
+table(cellcycle_cells$status)/sum(table(cellcycle_cells$status))*100
+
+# 303 out of 321 cells (94.39%) overlap with deviating luminal cells
+sum(rownames(RP_luminal_annot[rownames(RP_luminal_annot)%in%Luminal_dev,])%in%cellcycle_cells$cellID)/321*100
+
+fisher.test(matrix(c(385, 12520, 18, 1227), nrow=2), alternative='greater') # Luminal deviating vs. Luminal
+fisher.test(matrix(c(385, 197, 18, 18), nrow=2), alternative='greater') # Luinal deviating vs. Cell cycle
+```
+
+```{r}
+length(cellcyclecells)
+length(intersect(cellcyclecells, Luminal_dev))
+length(intersect(cellcyclecells, Luminal_dev))/length(cellcyclecells)
+
+# Changing overlaping
+intersect(signature_info[signature_info$DU == "Up" & signature_info$DE_common == 1,]$Gene, Luminal_markers)
+PCS1 = c("STMN1", "MCM4", "CCNB1", "CDC6", "CDKN3", "EZH2", "TPX2", 
+         "FOXM1", "KIF11", "HMMR", "MKI67", "KNTC1") 
+intersect(signature, PCS1)
+intersect(signature_chen, PCS1)
+```
+
+# For Basal cells
+```{r}
+RP_Basal_sign <- subset(chen_primaries, subset = celltype=="Basal/Intermediate",  features = signature_chen)
+RP_Basal_sign <- FindVariableFeatures(RP_Basal_sign, selection.method = "vst")
+RP_Basal_sign <- ScaleData(RP_Basal_sign)
+RP_Basal_sign <- RunPCA(RP_Basal_sign, features = VariableFeatures(RP_Basal_sign))
+
+std <- Stdev(RP_Basal_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Basal_pca_loadings_sign <- Loadings(object = RP_Basal_sign, reduction = "pca")
+Basal_pca_embeddings_sign <- data.frame(Embeddings(object = RP_Basal_sign, reduction = "pca"))
+Basal_dev <- rownames(Basal_pca_embeddings_sign[(Basal_pca_embeddings_sign$PC_2<=-5),])
+
+write.csv(Basal_pca_loadings_sign[,c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure9.3_right_Data", ".csv"))
+write.csv(Basal_pca_embeddings_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure9.3_left_Data", ".csv"))
+
+plot1 <- DimPlot(RP_Basal_sign, cells.highlight = Basal_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Basal", "Basal_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+plot2 <- VizDimLoadings(RP_Basal_sign, dims = 2, reduction = "pca") + theme(axis.text.y = element_text(family = "sans", face = "italic"))
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1.1,0.9))
+ggsave(paste0(PATH_FIG_SCMARKERS, "SupplementaryFigure9.3_SC_Basal", ".svg"), plot=g , width = 10, height = 5)
+
+cellannot[(cellannot$celltype=="Basal/Intermediate") & (cellannot$cellids%in%Basal_dev),]
+```
+
+```{r}
+RP_Basal_random_sign <- subset(chen_primaries, subset = celltype=="Basal/Intermediate",features = random_signature)
+RP_Basal_random_sign <- FindVariableFeatures(RP_Basal_random_sign, selection.method = "vst")
+RP_Basal_random_sign <- ScaleData(RP_Basal_random_sign)
+RP_Basal_random_sign <- RunPCA(RP_Basal_random_sign, features = VariableFeatures(RP_Basal_random_sign))
+
+std <- Stdev(RP_Basal_random_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Basal_pca_loadings_random_sign <- Loadings(object = RP_Basal_random_sign, reduction = "pca")
+Basal_pca_embeddings_random_sign <- data.frame(Embeddings(object = RP_Basal_random_sign, reduction = "pca"))
+write.csv(Basal_pca_embeddings_random_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure9.4_left_Data", ".csv"))
+plot1 <- DimPlot(RP_Basal_random_sign, cells.highlight = Basal_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Basal", "Basal_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+
+RP_Basal_all_genes <- subset(chen_primaries, subset = celltype=="Basal/Intermediate")
+RP_Basal_all_genes <- FindVariableFeatures(RP_Basal_all_genes, selection.method = "vst")
+RP_Basal_all_genes <- ScaleData(RP_Basal_all_genes)
+RP_Basal_all_genes <- RunPCA(RP_Basal_all_genes, features = VariableFeatures(RP_Basal_all_genes))
+
+std <- Stdev(RP_Basal_all_genes, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Basal_pca_loadings_all_genes <- Loadings(object = RP_Basal_all_genes, reduction = "pca")
+Basal_pca_embeddings_all_genes <- data.frame(Embeddings(object = RP_Basal_all_genes, reduction = "pca"))
+write.csv(Basal_pca_embeddings_all_genes[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure9.4_right_Data", ".csv"))
+
+plot2 <- DimPlot(RP_Basal_all_genes, cells.highlight = Basal_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Basal", "Basal_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1,1))
+ggsave(paste0(PATH_FIG_SCMARKERS, "SupplementaryFigure9.4_SC_Basal_random_all", ".svg"), plot=g , width = 10, height = 5)
+```

@@ -1,0 +1,236 @@
+---
+title: "3. Single-cell analysis (Fibroblasts)"
+output: html_document
+date: "2025-05-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load global configuration
+```{r}
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/global_config.R")
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/sc_config.R")
+```
+
+#### FIBROBLASTS #####
+```{r}
+set.seed(1)
+RP_Fibroblast_sign <- subset(chen_primaries, subset = celltype=="Fibroblast",  features = signature_chen)
+RP_Fibroblast_sign <- FindVariableFeatures(RP_Fibroblast_sign, selection.method = "vst")
+RP_Fibroblast_sign <- ScaleData(RP_Fibroblast_sign)
+RP_Fibroblast_sign <- RunPCA(RP_Fibroblast_sign, features = VariableFeatures(RP_Fibroblast_sign))
+
+std <- Stdev(RP_Fibroblast_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Fibroblast_pca_loadings_sign <- Loadings(object = RP_Fibroblast_sign, reduction = "pca")
+Fibroblast_pca_embeddings_sign <- data.frame(Embeddings(object = RP_Fibroblast_sign, reduction = "pca"))
+
+# write.csv(Fibroblast_pca_loadings_sign[,c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "Figure4A_bottom_Data", ".csv"))
+# write.csv(Fibroblast_pca_embeddings_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "Figure4A_top_Data", ".csv"))
+
+# Fibroblast_dev <- rownames(Fibroblast_pca_embeddings_sign[(Fibroblast_pca_embeddings_sign$PC_2>=2)
+                                                          # &(Fibroblast_pca_embeddings_sign$PC_1<=2),])
+Fibroblast_dev <- rownames(Fibroblast_pca_embeddings_sign[Fibroblast_pca_embeddings_sign$PC_2>=2.5,])
+print(length(Fibroblast_dev))
+genes_ordered_by_loadings <- rownames(Fibroblast_pca_loadings_sign[order(Fibroblast_pca_loadings_sign[, "PC_2"], decreasing = TRUE),])
+
+plot1 <- DimPlot(RP_Fibroblast_sign, cells.highlight = Fibroblast_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Fibroblast", "Fibroblast_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+plot2 <- VizDimLoadings(RP_Fibroblast_sign, dims = 2, reduction = "pca") + xlab("PC2") + theme(
+  axis.text.y = element_text(family = "sans", face = "italic"))
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1.1,0.9))
+# ggsave(paste0(PATH_FIG_SCMARKERS, "Figure4A_SC_Fibroblast", ".svg"), plot=g , width = 6, height = 5)
+
+
+```
+
+```{r}
+RP_Fibroblast_random_sign <- subset(chen_primaries, subset = celltype=="Fibroblast", 
+                                    features = random_signature)
+RP_Fibroblast_random_sign <- FindVariableFeatures(RP_Fibroblast_random_sign, selection.method = "vst")
+RP_Fibroblast_random_sign <- ScaleData(RP_Fibroblast_random_sign)
+RP_Fibroblast_random_sign <- RunPCA(RP_Fibroblast_random_sign, features = VariableFeatures(RP_Fibroblast_random_sign))
+
+std <- Stdev(RP_Fibroblast_random_sign, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Fibroblast_pca_loadings_random_sign <- Loadings(object = RP_Fibroblast_random_sign, reduction = "pca")
+Fibroblast_pca_embeddings_random_sign <- data.frame(Embeddings(object = RP_Fibroblast_random_sign, reduction = "pca"))
+# write.csv(Fibroblast_pca_embeddings_random_sign[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure10.1_left_Data", ".csv"))
+
+plot1 <- DimPlot(RP_Fibroblast_random_sign, cells.highlight = Fibroblast_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Fibroblast", "Fibroblast_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+
+RP_Fibroblast_all_genes <- subset(chen_primaries, subset = celltype=="Fibroblast")
+RP_Fibroblast_all_genes <- FindVariableFeatures(RP_Fibroblast_all_genes, selection.method = "vst")
+RP_Fibroblast_all_genes <- ScaleData(RP_Fibroblast_all_genes)
+RP_Fibroblast_all_genes <- RunPCA(RP_Fibroblast_all_genes, features = VariableFeatures(RP_Fibroblast_all_genes))
+
+std <- Stdev(RP_Fibroblast_all_genes, reduction = "pca")
+var <- std^2
+PC_1 <- round(var[1]/sum(var),4)
+PC_2 <- round(var[2]/sum(var),4)
+PC_1 <- paste("PC1", PC_1*100, "%")
+PC_2 <- paste("PC2", PC_2*100, "%")
+
+Fibroblast_pca_loadings_all_genes <- Loadings(object = RP_Fibroblast_all_genes, reduction = "pca")
+Fibroblast_pca_embeddings_all_genes <- data.frame(Embeddings(object = RP_Fibroblast_all_genes, reduction = "pca"))
+# write.csv(Fibroblast_pca_embeddings_all_genes[, c("PC_1", "PC_2")], paste0(PATH_FIGSHARE, "SupplementaryFigure10.1_1right_Data", ".csv"))
+genes_ordered_by_loadings <- rownames(Fibroblast_pca_loadings_sign[order(abs(Fibroblast_pca_loadings_sign[, "PC_2"]), decreasing = TRUE),])
+
+plot2 <- DimPlot(RP_Fibroblast_all_genes, cells.highlight = Fibroblast_dev,  reduction = "pca", cols="black")+labs(y=PC_2, x=PC_1)+ scale_color_manual(labels = c("Fibroblast", "Fibroblast_dev"), values = c("gray", "black"))+theme(legend.position = "bottom")
+g <- grid.arrange(plot1, plot2, ncol=2, widths=c(1,1))
+# ggsave(paste0(PATH_FIG_SCMARKERS, "SupplementaryFigure10.1_SC_Fibroblast_random_all", ".svg"), plot=g , width = 10, height = 5)
+```
+
+# Markers of Fibroblast cells, in our signature and using all genes
+```{r}
+RP_Fibroblast <- subset(chen_primaries, subset = celltype=="Fibroblast")
+Fibroblast_dev_markers_sign <- FindMarkers(RP_Fibroblast, ident.1 = Fibroblast_dev, features = signature_chen, only.pos = TRUE)
+Fibroblast_dev_markers_sign <- Fibroblast_dev_markers_sign[Fibroblast_dev_markers_sign$p_val_adj<0.001,] # 39
+Fibroblast_dev_markers_all <- FindMarkers(RP_Fibroblast, ident.1 = Fibroblast_dev, only.pos = TRUE)
+Fibroblast_dev_markers_all <- Fibroblast_dev_markers_all[Fibroblast_dev_markers_all$p_val_adj<0.001,] # 537
+dim(Fibroblast_dev_markers_sign)
+dim(Fibroblast_dev_markers_all)
+
+Adipose_derived_genes <- intersect(unique(c(preadipocyte, ASCS, general_cafs, matrix_cafs, cafs_col11a1)), rownames(RP_Fibroblast)) 
+
+Fibroblast_dev_markers_all <- Fibroblast_dev_markers_all[order(-Fibroblast_dev_markers_all$avg_log2FC),]
+Fibroblast_dev_markers_all["overlap_aggressiveness_signature"] <- ifelse(rownames(Fibroblast_dev_markers_all)%in%signature_chen, TRUE, FALSE) # 39
+Fibroblast_dev_markers_all["top100_loadings"] <- ifelse(rownames(Fibroblast_dev_markers_all)%in%genes_ordered_by_loadings[1:100], TRUE, FALSE) # 38
+Fibroblast_dev_markers_all["top50_loadings"] <- ifelse(rownames(Fibroblast_dev_markers_all)%in%genes_ordered_by_loadings[1:50], TRUE, FALSE) # 33
+Fibroblast_dev_markers_all["top30_loadings"] <- ifelse(rownames(Fibroblast_dev_markers_all)%in%genes_ordered_by_loadings[1:30], TRUE, FALSE) # 24
+Fibroblast_dev_markers_all["adipose_derived"] <- ifelse(rownames(Fibroblast_dev_markers_all)%in%Adipose_derived_genes, TRUE, FALSE)
+Fibroblast_dev_markers_all["overlap_decipher"] <- ifelse(rownames(Fibroblast_dev_markers_all)%in%decipher, TRUE, FALSE)
+Fibroblast_dev_markers_all["overlap_prostadiag"] <- ifelse(rownames(Fibroblast_dev_markers_all)%in%prostadiag, TRUE, FALSE)
+Fibroblast_dev_markers_all["olverap_oncotypeDX"] <- ifelse(rownames(Fibroblast_dev_markers_all)%in%oncotypeDX, TRUE, FALSE)
+Fibroblast_dev_markers_all["olverap_polaris"] <- ifelse(rownames(Fibroblast_dev_markers_all)%in%polaris, TRUE, FALSE)
+write.table(Fibroblast_dev_markers_all, paste0(PATH_DESEQ2, "SupplementaryTable13.1_Fibroblast_dev_findmarkers_all", ".csv"), sep=",", row.names = T)
+
+final_markers <- rownames(Fibroblast_dev_markers_all[Fibroblast_dev_markers_all$top30_loadings,])
+```
+
+```{r}
+Fibroblast_res = Fibroblast_dev_markers_all
+Fibroblast_res$gene = rownames(Fibroblast_res)
+Fibroblast_res <- Fibroblast_res[,c("gene", "avg_log2FC")]
+row.names(Fibroblast_res) <- NULL
+Fibroblast_ranks <- deframe(Fibroblast_res)
+
+pathways.hallmark <- gmtPathways(paste0(PATH_DATA, "h.all.v2023.2.Hs.symbols.gmt"))
+Fibroblast_markers_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=Fibroblast_ranks, nperm=1000)
+Fibroblast_markers_fgsea_res <- Fibroblast_markers_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+Fibroblast_markers_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+Fibroblast_markers_fgsea_res <- data.frame(Fibroblast_markers_fgsea_res)
+
+check_overlap <- function(leading_genes, signature_genes) {
+  return(intersect(leading_genes, signature_genes))
+}
+
+Fibroblast_markers_fgsea_res$overlap <- sapply(Fibroblast_markers_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+Fibroblast_markers_fgsea_res$leadingEdge <- sapply(Fibroblast_markers_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+Fibroblast_markers_fgsea_res$overlap <- sapply(Fibroblast_markers_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+Fibroblast_markers_fgsea_res <- Fibroblast_markers_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+write.table(Fibroblast_markers_fgsea_res, paste0(PATH_GSEA, "SupplementaryTable13.2_Fibroblast_markers_fgsea_res", ".csv"), sep=",", row.names = F)
+
+Fibroblast_gsea <- ggplot(na.omit(Fibroblast_markers_fgsea_res), aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+ggsave(paste0(PATH_FIG_GSEA, "Fibroblast_gsea", ".svg"), plot=Fibroblast_gsea , width = 8, height = 10)
+```
+
+```{r}
+Fibroblast_res = Fibroblast_dev_markers_final
+Fibroblast_res$gene = rownames(Fibroblast_res)
+Fibroblast_res <- Fibroblast_res[,c("gene", "avg_log2FC")]
+row.names(Fibroblast_res) <- NULL
+Fibroblast_ranks <- deframe(Fibroblast_res)
+
+Fibroblast_markers_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=Fibroblast_ranks, nperm=1000)
+Fibroblast_markers_fgsea_res <- Fibroblast_markers_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+Fibroblast_markers_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+Fibroblast_markers_fgsea_res <- data.frame(Fibroblast_markers_fgsea_res)
+
+check_overlap <- function(leading_genes, signature_genes) {
+  return(intersect(leading_genes, signature_genes))
+}
+
+Fibroblast_markers_fgsea_res$overlap <- sapply(Fibroblast_markers_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+Fibroblast_markers_fgsea_res$leadingEdge <- sapply(Fibroblast_markers_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+Fibroblast_markers_fgsea_res$overlap <- sapply(Fibroblast_markers_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+Fibroblast_markers_fgsea_res <- Fibroblast_markers_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+write.table(Fibroblast_markers_fgsea_res, paste0(PATH_GSEA, "Fibroblast_markers_fgsea_res_sign", ".csv"), sep=",", row.names = F)
+
+Fibroblast_gsea <- ggplot(Fibroblast_markers_fgsea_res, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+ggsave(paste0(PATH_FIG_GSEA, "Fibroblast_gsea_sign", ".svg"), plot=Fibroblast_gsea , width = 8, height = 10)
+```
+
+# Are the markers specific to fibroblast cells
+```{r}
+chen_RP_Fibroblast_dev <- chen_primaries
+chen_RP_Fibroblast_dev$cell.type <- ifelse(colnames(chen_RP_Fibroblast_dev) %in% Fibroblast_dev, "Fibroblast_dev", chen_RP_Fibroblast_dev$celltype)
+Idents(chen_RP_Fibroblast_dev) = chen_RP_Fibroblast_dev$cell.type
+sorted_idents <- c("Luminal",  "Basal/Intermediate", 'Fibroblast', "Fibroblast_dev", 'Endothelial', 'Monocyte', 'Mast', 'T','B')
+Idents(chen_RP_Fibroblast_dev) <- factor(x =Idents(chen_RP_Fibroblast_dev), levels = sorted_idents)
+g <- DotPlot(chen_RP_Fibroblast_dev, features = rev(intersect(genes_ordered_by_loadings, final_markers)))+ RotatedAxis() + coord_flip() + theme(axis.text.y = element_text(family = "sans", face = "italic"))
+write.csv(g$data, paste0(PATH_FIGSHARE, "SupplementaryFigure10.2_Fibroblast_dotplot", ".csv"))
+ggsave(paste0(PATH_FIG_DOTPLOT, "SupplementaryFigure10.2_Fibroblast_dotplot", ".svg"), plot=g , width = 6, height = 6)
+```
+
+
+```{r}
+Fibroblast_Jef <- readRDS(paste0(PATH_DATA, "231005_seuratObj_chen_fibroblasts_no_metastatic.rds"))
+Fibroblast_Jef <- subset(Fibroblast_Jef, subset = sample.id != "SC171")
+Fibroblast_Jef$cell.subtype <- Fibroblast_Jef@meta.data$cell.type.jef.L2
+
+# Rename
+Fibroblast_Jef$cell.subtype <- gsub("Adipogenic fibroblasts", "Adipose-derived fibroblasts", Fibroblast_Jef$cell.subtype)
+Fibroblast_Jef$cell.subtype <- gsub("CAFs \\(ECM remodeling\\)", "Adipose-derived CAFs", Fibroblast_Jef$cell.subtype)
+
+adipose_derived_fibroblasts <- colnames(Fibroblast_Jef)[Fibroblast_Jef$cell.subtype %in% c("Adipose-derived fibroblasts")]
+adipose_derived_cafs <- colnames(Fibroblast_Jef)[Fibroblast_Jef$cell.subtype %in% c("Adipose-derived CAFs")]
+
+chen_RP_Adipose_derived_fibroblast <- chen_primaries
+chen_RP_Adipose_derived_fibroblast$cell.type <- ifelse(colnames(chen_RP_Adipose_derived_fibroblast) %in% adipose_derived_fibroblasts, "Adipose-derived fibroblasts", chen_RP_Adipose_derived_fibroblast$celltype)
+
+chen_RP_Adipose_derived_fibroblast$cell.type <- ifelse(colnames(chen_RP_Adipose_derived_fibroblast) %in% adipose_derived_cafs, "Adipose-derived CAFs", chen_RP_Adipose_derived_fibroblast$cell.type)
+sorted_idents <- c("Luminal", "Basal/Intermediate", 'Fibroblast', 'Adipose-derived fibroblasts', 'Adipose-derived CAFs',
+                   'Endothelial', 'Endothelial_dev', 'Monocyte', 'Mast', 'T','B')
+chen_RP_Adipose_derived_fibroblast$cell.type <- factor(x = chen_RP_Adipose_derived_fibroblast$cell.type, levels = sorted_idents)
+Idents(chen_RP_Adipose_derived_fibroblast) <- "cell.type"
+
+table(chen_RP_Adipose_derived_fibroblast$cell.type)
+
+g <- DotPlot(chen_RP_Adipose_derived_fibroblast, features = CAFs_specific, group.by = 'cell.type')+ RotatedAxis() + coord_flip() + 
+  theme(legend.position = c(1.1, 0.2), plot.margin = unit(c(1, 5.5, 0.2, 0.2), "cm"), axis.text.y = element_text(family = "sans", face = "italic"))  # top, right, bottom, left)
+write.csv(g$data, paste0(PATH_FIGSHARE, "SupplementaryFigure10.3_Adipose-derived_fibroblast_dotplot", ".csv"))
+ggsave(paste0(PATH_FIG_DOTPLOT, "SupplementaryFigure10.3_Adipose-derived_fibroblast_dotplot", ".svg"), plot=g, width = 6, height = 4)
+```
+

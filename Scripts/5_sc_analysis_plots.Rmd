@@ -1,0 +1,758 @@
+---
+title: "5. Single-cell analsysis - Plots"
+output: html_document
+date: "2025-05-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load global configuration
+```{r, warning=FALSE, message=FALSE}
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/global_config.R")
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/sc_config.R")
+```
+
+```{r}
+Luminal_pca_embeddings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure3A_top_Data.csv"), row.names = 1)
+Luminal_pca_loadings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure3A_bottom_Data", ".csv"), row.names = 1)
+Luminal_dev_markers_all <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable12.1_Luminal_dev_findmarkers_all", ".csv"))
+Luminal_dev <- rownames(Luminal_pca_embeddings_sign[Luminal_pca_embeddings_sign$PC_1>=3,])
+
+Fibroblast_pca_embeddings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure4A_top_Data", ".csv"), row.names = 1)
+Fibroblast_pca_loadings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure4A_bottom_Data", ".csv"), row.names = 1)
+Fibroblast_dev_markers_all <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable13.1_Fibroblast_dev_findmarkers_all", ".csv"))
+Fibroblast_dev <- rownames(Fibroblast_pca_embeddings_sign[Fibroblast_pca_embeddings_sign$PC_2>=2.5,])
+
+Endothelial_pca_embeddings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure5A_left_Data", ".csv"), row.names=1)
+Endothelial_pca_loadings_sign <- read.csv(paste0(PATH_FIGSHARE, "Figure5A_right_Data", ".csv"), row.names = 1)
+Endothelial_dev_markers_all <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable14.1_Endothelial_withoutdoublets_dev_findmarkers_all", ".csv"))
+Endothelial_dev <- rownames(Endothelial_pca_embeddings_sign[(Endothelial_pca_embeddings_sign$PC_2<=-2.5),])
+```
+
+#### LUMINAL CELLS ####
+
+# Heatmap with Jef annotation
+```{r}
+Luminal_Jef<- readRDS(paste0(PATH_DATA, "231005_seuratObj_chen_luminal_no_metastatic.rds"))
+Luminal_Jef <- subset(Luminal_Jef, subset = sample.id != "SC171")
+Luminal_Jef_info <- Luminal_Jef@meta.data
+
+table(Luminal_Jef_info[rownames(Luminal_Jef_info)%in%Luminal_dev,]$cell.type.jef.L3)
+table(Luminal_Jef_info$cell.type.jef.L3)
+table(Luminal_Jef_info[rownames(Luminal_Jef_info)%in%Luminal_dev,]$chenCluster)
+length(Luminal_dev)
+
+status <- as.character(Luminal_Jef@meta.data$status)
+status[status=="malignant"] <- "cancerous"
+status[status=="non-malignant"] <- "non-cancerous"
+```
+
+# Heatmap Luminal cell expression, markers of deviating cells from our signature and literature markers
+```{r}
+Luminal_Jef$cell.type <- ifelse(rownames(Luminal_Jef_info) %in% Luminal_dev, "Luminal_dev", "Luminal")
+Luminal_Jef$cell.type <- factor(Luminal_Jef$cell.type)
+Idents(Luminal_Jef) <-Luminal_Jef$cell.type 
+Luminal_Jef$cell.subtype <- Luminal_Jef_info$cell.type.jef.L3
+Luminal_Jef$cell.status <- factor(status)
+
+# sum(rownames(Luminal_Jef_info[Luminal_Jef_info$cell.subtype == "Luminal (Proliferating)",]) %in% Luminal_dev)
+Luminal_Jef <- subset(Luminal_Jef, subset = cell.subtype %in% c("Luminal", "Luminal (Proliferating)", 
+                                                                "Luminal (Ribo, translation)"))
+Luminal_Jef$cell.subtype <- factor(Luminal_Jef$cell.subtype, levels = c("Luminal", "Luminal (Ribo, translation)","Luminal (Proliferating)"))
+
+cellcycle_cells = cellannot$cellids[(cellannot["type"]=="Cell Cycle")
+                                 &(!cellannot["sampleID"] %in% c("SC171", "SC172"))]
+
+Luminal_Jef$cell.type.Chen <- factor(ifelse(colnames(Luminal_Jef) %in% cellcycle_cells,"Cell Cycle", "Luminal"))
+Luminal_Jef_info <- Luminal_Jef@meta.data
+mat <- table(Luminal_Jef_info$seurat_clusters, Luminal_Jef_info$cell.subtype)
+mat <- scale(mat)
+Idents(Luminal_Jef) <- "cell.type"
+
+genes_ordered_by_loadings <- rownames(Luminal_pca_loadings_sign[order(abs(Luminal_pca_loadings_sign[, "PC_1"]), decreasing = TRUE),])
+Luminal_markers <- intersect(genes_ordered_by_loadings, rownames(Luminal_dev_markers_all[Luminal_dev_markers_all$top30_loadings,]))
+# Robo?
+# proliferative <- c('MKI67', 'TOP2A',  'CDC20', 'CCNB1', 'CENPF', 'PTTG1')
+# luminal <- c('KRT8', 'KLK4', 'KLK3', 'MSMB', 'MT1E', 'ACPP', 'PA2G2A')
+
+# Luminal_litterature_markers <-c(luminal, proliferative)
+# Luminal_litterature_markers <- intersect(Luminal_litterature_markers, rownames(Luminal_Jef))
+# genes <- unlist(Luminal_litterature_markers) # %>% unique()
+
+columns_to_plot <- c("cell.type", "cell.subtype", "cell.type.Chen", "cell.status") 
+Luminal_Jef_info <- Luminal_Jef_info[, columns_to_plot]
+write.csv(Luminal_Jef_info, paste0(PATH_FIGSHARE, "Figure3B_middle_Data", ".csv"))
+write.csv(Luminal_Jef_info, paste0(PATH_FIGSHARE, "SupplementaryFigure13.1_middle_Data", ".csv"))
+
+annot_cols <- list(
+  cell.type = setNames(c("blue", "red"), levels(Luminal_Jef_info$cell.type)),
+  cell.subtype = setNames(c("darkblue", "red", "lightblue"),levels(Luminal_Jef_info$cell.subtype)),
+  cell.type.Chen = setNames(c("red", "blue"), levels(Luminal_Jef_info$cell.type.Chen)),
+  cell.status = setNames(c("red", "blue", "grey"), levels(Luminal_Jef_info$cell.status)))
+
+heatmapAnnot <- rowAnnotation(
+  df = Luminal_Jef_info,
+  show_annotation_name = TRUE,
+  show_legend = TRUE,
+  col = annot_cols)
+
+Luminal_Jef <- ScaleData(Luminal_Jef, features = rownames(Luminal_Jef), verbose = FALSE)
+col_fun <- circlize::colorRamp2(c(-2, 0, 2), colors = c("#18528f", "white", "#a81d1d"))
+
+# luminal
+marker_titles <- c("Luminal", "Proliferating\nluminal")
+genes <- unlist(intersect(c(luminal, proliferative), rownames(Luminal_Jef)))
+plot_mat <- t(as.matrix(Luminal_Jef[["RNA"]]@scale.data[genes,]))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "Figure3B_right_Data", ".csv"))
+
+plot_mat_labels <- plot_mat
+plot_mat_labels[,colnames(plot_mat_labels) %in% luminal] <- "Luminal"
+plot_mat_labels[,colnames(plot_mat_labels) %in% proliferative] <- "Proliferating\nluminal"
+
+ht_markers <- Heatmap(plot_mat,
+              show_column_names = T, 
+              show_row_names = F,
+              # column_title = marker_titles[1],
+              column_split = plot_mat_labels[1,],
+              column_title_rot = 45,
+              column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+              row_split = Luminal_Jef_info[,c("cell.type", "cell.subtype")],
+              row_title = NULL,
+              clustering_method_rows = "complete",
+              cluster_columns = F, 
+              cluster_rows = F,
+              col = col_fun,
+              left_annotation = heatmapAnnot,
+              show_heatmap_legend = F,
+              column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"),
+              border_gp = gpar(col = "black", lty = 1))
+
+# n <- 2
+# 
+# for (markers in list(proliferative)){
+#     genes <- unlist(intersect(markers, rownames(Luminal_Jef)))
+#     plot_mat <- t(as.matrix(Luminal_Jef[["RNA"]]@scale.data[genes,]))
+#     ht <- Heatmap(plot_mat,
+#                   show_column_names = T, 
+#                   show_row_names = F,
+#                   column_title = marker_titles[n],
+#                   column_title_rot = 45,
+#                   column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+#                   row_split = Luminal_Jef_info[,c("cell.type", "cell.subtype")],
+#                   row_title = NULL,
+#                   clustering_method_rows = "complete",
+#                   cluster_columns = F, 
+#                   cluster_rows = F,
+#                   col = col_fun,
+#                   # left_annotation = heatmapAnnot,
+#                   show_heatmap_legend = F,
+#                   column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic", col="black"),
+#                   border_gp = gpar(col = "black", lty = 1))
+#     ht_markers <- ht_markers + ht
+#     n <- n + 1
+# }
+
+# genes <- intersect(c(luminal, proliferative), rownames(Luminal_Jef)) 
+# plot_mat <- t(as.matrix(Luminal_Jef[["RNA"]]@scale.data[genes,]))
+# write.csv(plot_mat, paste0(PATH_FIGSHARE, "Figure3B_right_Data", ".csv"))
+
+signature_titles <- c("Decipher", "Prostadiag", "OncotypeDx")
+genes <- unlist(intersect(decipher, rownames(Luminal_Jef)))
+plot_mat = t(as.matrix(Luminal_Jef[["RNA"]]@scale.data[genes,]))
+
+ht_signatures <- Heatmap(plot_mat,
+              show_column_names = T, 
+              show_row_names = F,
+              column_title = signature_titles[1],
+              # column_title_rot = 0,
+              column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+              row_split = Luminal_Jef_info[,c("cell.type", "cell.subtype")],
+              row_title = NULL,
+              clustering_method_rows = "complete",
+              cluster_columns = F, 
+              cluster_rows = F,
+              col = col_fun,
+              left_annotation = heatmapAnnot,
+              show_heatmap_legend = F,
+              column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic", col="black"),
+              border_gp = gpar(col = "black", lty = 1))
+
+n <- 2
+
+for (signature in list(prostadiag, oncotypeDX)){
+    genes <- unlist(intersect(signature, rownames(Luminal_Jef)))
+    plot_mat = t(as.matrix(Luminal_Jef[["RNA"]]@scale.data[genes,]))
+    ht <- Heatmap(plot_mat,
+                show_column_names = T, 
+                show_row_names = F,
+                column_title = signature_titles[n],
+                # column_title_rot = 0,
+                column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+                row_split = Luminal_Jef_info[,c("cell.type", "cell.subtype")],
+                row_title = NULL,
+                clustering_method_rows = "complete",
+                cluster_columns = F, 
+                cluster_rows = F,
+                col = col_fun,
+                # left_annotation = heatmapAnnot,
+                show_heatmap_legend = F,
+                column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic", col="black"),
+                border_gp = gpar(col = "black", lty = 1))
+    
+    ht_signatures <- ht_signatures + ht
+    n <- n + 1
+}
+
+genes <- intersect(unique(c(decipher, oncotypeDX, prostadiag)), rownames(Luminal_Jef))
+plot_mat <- t(as.matrix(Luminal_Jef[["RNA"]]@scale.data[genes,]))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "SupplementaryFigure13.1_right_Data", ".csv"))
+
+# Luminal markers
+genes <- intersect(Luminal_markers, rownames(Luminal_Jef))
+plot_mat_left = t(as.matrix(Luminal_Jef[["RNA"]]@scale.data[genes,]))
+write.csv(plot_mat_left, paste0(PATH_FIGSHARE, "Figure3B_left_Data", ".csv"))
+write.csv(plot_mat_left, paste0(PATH_FIGSHARE, "SupplementaryFigure13.1_left_Data", ".csv"))
+
+ht_left <- Heatmap(matrix = plot_mat_left, 
+               show_column_names = T, 
+               show_row_names = F,
+               column_title_gp = gpar(fontsize = 6, rot = 45),
+               row_split = Luminal_Jef_info[,c("cell.type", "cell.subtype")],
+               row_title = NULL,
+               clustering_method_rows = "complete",
+               cluster_columns = F, 
+               cluster_rows = F,
+               col = col_fun,
+               show_heatmap_legend = T,
+               name = "expression.level",
+               column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic",
+                                      col="black"),
+               border_gp = gpar(col = "black", lty = 1))
+
+ht_list_markers <- ht_left + ht_markers
+png(paste0(PATH_FIG_HEATMAPS, "Figure3B_Luminal_markers_sc_markers", ".png"), width = 10, height = 7, res = 600, units = "in")
+draw(ht_list_markers)
+dev.off()
+
+ht_list_signatures <- ht_left + ht_signatures
+png(paste0(PATH_FIG_HEATMAPS, "SupplementaryFigure13.1_Luminal_markers_sc_signature", ".png"), width = 16, height = 7, res = 600, units = "in")
+draw(ht_list_signatures)
+dev.off()
+```
+#### FIBROBLASTS ####
+
+# Heatmap with Jef annotation
+```{r}
+Fibroblast_Jef <- readRDS(paste0(PATH_DATA, "231005_seuratObj_chen_fibroblasts_no_metastatic.rds"))
+Fibroblast_Jef <- subset(Fibroblast_Jef, subset = sample.id != "SC171") 
+
+Fibroblast_Jef_info <- Fibroblast_Jef@meta.data
+
+table(Fibroblast_Jef_info[rownames(Fibroblast_Jef_info)%in%Fibroblast_dev,]$cell.type.jef.L2)
+table(Fibroblast_Jef_info$cell.type.jef.L2)
+table(Fibroblast_Jef_info[rownames(Fibroblast_Jef_info)%in%Fibroblast_dev,]$chenCluster)
+length(Fibroblast_dev)
+
+status <- as.character(Fibroblast_Jef@meta.data$status)
+status[status=="malignant"] <- "cancerous"
+status[status=="non-malignant"] <- "non-cancerous"
+```
+
+# Heatmap Fibroblast expression, markers of deviating cells from our signature and literature markers
+```{r}
+Fibroblast_Jef$cell.type <- ifelse(rownames(Fibroblast_Jef_info) %in% Fibroblast_dev, "Fibroblast_dev", "Fibroblast")
+Fibroblast_Jef$cell.type <- factor(Fibroblast_Jef$cell.type)
+Idents(Fibroblast_Jef) <-Fibroblast_Jef$cell.type 
+Fibroblast_Jef$cell.subtype <- Fibroblast_Jef_info$cell.type.jef.L2
+
+# Rename
+Fibroblast_Jef$cell.subtype <- gsub("Adipogenic fibroblasts", "Adipose-derived fibroblasts", Fibroblast_Jef$cell.subtype)
+Fibroblast_Jef$cell.subtype <- gsub("CAFs \\(ECM remodeling\\)", "Adipose-derived CAFs", Fibroblast_Jef$cell.subtype)
+Fibroblast_Jef <- subset(Fibroblast_Jef, subset = cell.subtype %in% c("Adipose-derived fibroblasts", 
+                                                                      "Adipose-derived CAFs", 
+                                                                      "Myofibroblasts", 
+                                                                      "Pericytes 1",
+                                                                      "Pericytes 2"))
+Fibroblast_Jef$cell.subtype <- factor(Fibroblast_Jef$cell.subtype, levels = c("Adipose-derived fibroblasts", 
+                                                                      "Adipose-derived CAFs", 
+                                                                      "Myofibroblasts", 
+                                                                      "Pericytes 1",
+                                                                      "Pericytes 2"))
+Fibroblast_Jef$cell.status <- factor(status)
+Fibroblast_Jef_info <- Fibroblast_Jef@meta.data
+
+mat <- table(Fibroblast_Jef_info$seurat_clusters, Fibroblast_Jef_info$cell.subtype)
+mat <- scale(mat)
+Idents(Fibroblast_Jef) <- "cell.type"
+
+genes_ordered_by_loadings <- rownames(Fibroblast_pca_loadings_sign[order(abs(Fibroblast_pca_loadings_sign[, "PC_2"]), decreasing = TRUE),])
+Fibroblast_markers <- intersect(genes_ordered_by_loadings, rownames(Fibroblast_dev_markers_all[Fibroblast_dev_markers_all$top30_loadings,]))
+# Fibroblast_dev_markers_all <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable13.1_Fibroblast_dev_findmarkers_all", ".csv"))
+# Fibroblast_markers <- rownames(Fibroblast_dev_markers_all[Fibroblast_dev_markers_all$specific == TRUE & 
+#                               Fibroblast_dev_markers_all$overlap_aggressiveness_signature == TRUE,])
+
+# Fibroblast_markers <- c('PTGDS', 'SERPINF1', 'MMP2',	'IGFBP6',	'CTGF',	'GSN',	'MRC2',	'TCF21',	'MATN2',	'SSPN',	'S100A6',	'COL16A1',	'SCARA5',	'BOC',	'FST',	'MEG3',	'SSC5D',	'NHSL2',	'P3H3',	'CHRDL1',	'ANGPTL2',	'FAM107A',	'MEIS1',	'AHNAK2')
+
+# myofibroblasts <- c('MYH11', 'ACTA2', 'PLN', 'ACTG2', 'HRH2', 'SORBS1')
+# preadipocyte <- c('CFD', 'APOD', 'MGP', 'CXCL14')
+# ASCS <- c('PI16', 'COMP', 'ELN', 'EFEMP1', 'POSTN', 'MFAP5', 'IGFBP3', 'INHBA', 'MGP', 'FNDC5', 'MYH10', 'SFRP4', 'F2R', 'IGFBP5', 'VCAN', 'CCDC80', 'TIMP1', 'PTGIS', 'SERPINE2')
+# general_cafs <- c('FAP', 'S100A4', 'VIM', 'PDGFRB', 'PDPN', 'TNC')
+# matrix_cafs <- c('PDGFRA', 'DCN', 'LUM', 'VCAN', 'MFAP5', 'POSTN', 'FBLN1', 'FBLN2', 'LOX', 'LOXL1', 'CXCL14')
+# cafs_col11a1 <- c('FN1', 'CTHRC1', 'COMP', 'SFRP4', 'COL10A1', 'COL11A1', 'INHBA', 'THBS2')
+
+columns_to_plot <- c("cell.type", "cell.subtype", "cell.status") 
+col_fun <- circlize::colorRamp2(c(-2, 0, 2), colors = c("#18528f", "white", "#a81d1d"))
+Fibroblast_Jef_info <- Fibroblast_Jef_info[, columns_to_plot]
+write.csv(Fibroblast_Jef_info, paste0(PATH_FIGSHARE, "Figure4B_middle_Data", ".csv"))
+write.csv(Fibroblast_Jef_info, paste0(PATH_FIGSHARE, "SupplementaryFigure13.2_middle_Data", ".csv"))
+
+annot_cols <- list(
+  cell.type = setNames(c("blue", "red"), levels(Fibroblast_Jef_info$cell.type)),
+  cell.subtype = setNames(c("orange", "purple", "green", "darkblue", "blue"),
+                          levels(Fibroblast_Jef_info$cell.subtype)),
+  cell.status = setNames(c("blue", "gray"), levels(Fibroblast_Jef_info$cell.status)))
+
+heatmapAnnot <- rowAnnotation(
+  df = Fibroblast_Jef_info,
+  show_annotation_name = TRUE,
+  show_legend = TRUE,
+  col = annot_cols)
+
+Fibroblast_Jef <- ScaleData(Fibroblast_Jef, features = rownames(Fibroblast_Jef), verbose = FALSE)
+
+marker_titles <- c('Preadipocyte', "ASCs", 'General CAFs', 'Normal adipose-derived\nfibroblast state', 'Aggressive adipose-derived\nfibroblast state')
+genes <- unlist(intersect(preadipocyte, rownames(Fibroblast_Jef)))
+plot_mat = t(as.matrix(Fibroblast_Jef[["RNA"]]@scale.data[genes,]))
+
+ht_markers <- Heatmap(plot_mat,
+              show_column_names = T, 
+              show_row_names = F,
+              column_title = marker_titles[1],
+              column_title_rot = 45,
+              column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+              row_split = Fibroblast_Jef_info[,c("cell.type", "cell.subtype")],
+              row_title = NULL,
+              clustering_method_rows = "complete",
+              cluster_columns = F, 
+              cluster_rows = F,
+              col = col_fun,
+              left_annotation = heatmapAnnot,
+              show_heatmap_legend = F,
+              column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"),
+              border_gp = gpar(col = "black", lty = 1))
+
+n <- 2
+
+for (markers in list(ASCS, general_cafs, matrix_cafs, cafs_col11a1)){
+  genes <- unlist(intersect(markers, rownames(Fibroblast_Jef)))
+  plot_mat = t(as.matrix(Fibroblast_Jef[["RNA"]]@scale.data[genes,]))
+  
+  ht <- Heatmap(plot_mat,
+                show_column_names = T, 
+                show_row_names = F,
+                column_title = marker_titles[n],
+                column_title_rot = 45,
+                column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+                row_split = Fibroblast_Jef_info[,c("cell.type", "cell.subtype")],
+                row_title = NULL,
+                clustering_method_rows = "complete",
+                cluster_columns = F, 
+                cluster_rows = F,
+                col = col_fun,
+                # left_annotation = heatmapAnnot,
+                show_heatmap_legend = F,
+                column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"),
+                border_gp = gpar(col = "black", lty = 1))
+  ht_markers = ht_markers + ht
+  n <- n + 1
+}
+genes <- intersect(unique(c(preadipocyte, ASCS, general_cafs, matrix_cafs, cafs_col11a1)), rownames(Fibroblast_Jef)) 
+plot_mat <- t(as.matrix(Fibroblast_Jef[["RNA"]]@scale.data[genes,]))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "Figure4B_right_Data", ".csv"))
+
+# decipher
+signature_titles <- c("Decipher", "Prostadiag", "OncotypeDx")
+genes <- unlist(intersect(decipher, rownames(Fibroblast_Jef)))
+plot_mat = t(as.matrix(Fibroblast_Jef[["RNA"]]@scale.data[genes,]))
+
+ht_signatures <- Heatmap(plot_mat,
+              show_column_names = T, 
+              show_row_names = F,
+              column_title=signature_titles[1],
+              # column_title_rot = 30,
+              column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+              row_split = Fibroblast_Jef_info[,c("cell.type", "cell.subtype")],
+              row_title = NULL,
+              clustering_method_rows = "complete",
+              cluster_columns = F, 
+              cluster_rows = F,
+              col = col_fun,
+              left_annotation = heatmapAnnot,
+              show_heatmap_legend = F,
+              column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"),
+              border_gp = gpar(col = "black", lty = 1))
+
+n <- 2
+
+for (signature in list(prostadiag, oncotypeDX)){
+  genes <- unlist(intersect(signature, rownames(Fibroblast_Jef)))
+  plot_mat = t(as.matrix(Fibroblast_Jef[["RNA"]]@scale.data[genes,]))
+  
+  ht <- Heatmap(plot_mat,
+                show_column_names = T, 
+                show_row_names = F,
+                column_title=signature_titles[n],
+                # column_title_rot = 30,
+                column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+                row_split = Fibroblast_Jef_info[,c("cell.type", "cell.subtype")],
+                row_title = NULL,
+                clustering_method_rows = "complete",
+                cluster_columns = F, 
+                cluster_rows = F,
+                col = col_fun,
+                # left_annotation = heatmapAnnot,
+                show_heatmap_legend = F,
+                column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"),
+                border_gp = gpar(col = "black", lty = 1))
+  ht_signatures = ht_signatures + ht
+  n <- n + 1
+}
+genes <- intersect(unique(c(decipher, oncotypeDX, prostadiag)), rownames(Fibroblast_Jef))
+plot_mat = t(as.matrix(Fibroblast_Jef[["RNA"]]@scale.data[genes,]))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "SupplementaryFigure13.2_right_Data", ".csv"))
+
+# Fibroblast markers
+genes <- unlist(intersect(Fibroblast_markers, rownames(Fibroblast_Jef)))
+plot_mat = t(as.matrix(Fibroblast_Jef[["RNA"]]@scale.data[genes,]))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "Figure4B_left_Data", ".csv"))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "SupplementaryFigure13.2_left_Data", ".csv"))
+# Fibroblast_labels_colors = signature_df[Fibroblast_markers,"color"]
+
+ht_left <- Heatmap(matrix = plot_mat, 
+               show_column_names = T, 
+               show_row_names = F,
+               column_title_gp = gpar(fontsize = 6, rot = 45),
+               row_split = Fibroblast_Jef_info[,c("cell.type", "cell.subtype")],
+               row_title = NULL,
+               clustering_method_rows = "complete",
+               cluster_columns = F, 
+               cluster_rows = F,
+               col = col_fun,
+               show_heatmap_legend = T,
+               name = "expression.level",
+               column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic",
+                                      col="black"),
+               border_gp = gpar(col = "black", lty = 1))
+
+ht_list_markers <- ht_left + ht_markers
+png(paste0(PATH_FIG_HEATMAPS, "Figure4B_Fibroblast_markers_sc_markers", ".png"), width = 16, height = 7, res = 600, units = "in")
+draw(ht_list_markers)
+dev.off()
+ht_list_signatures <- ht_left + ht_signatures
+png(paste0(PATH_FIG_HEATMAPS, "SupplementaryFigure13.2_Fibroblast_markers_sc_signature", ".png"), width = 16, height = 7, res = 600, units = "in")
+draw(ht_list_signatures)
+dev.off()
+```
+
+#### ENDOTHELIAL CELLS ####
+
+# Heatmap with Jef annotation
+```{r}
+Endothelial_Jef <- readRDS(paste0(PATH_DATA, "231005_seuratObj_chen_endothelial_no_metastatic.rds"))
+Endothelial_Jef <- subset(Endothelial_Jef, subset = sample.id != "SC171") 
+
+Endothelial_Jef_info <- Endothelial_Jef@meta.data
+
+table(Endothelial_Jef_info[rownames(Endothelial_Jef_info)%in%Endothelial_dev,]$cell.type.jef.L2)
+table(Endothelial_Jef_info$cell.type.jef.L2)
+table(Endothelial_Jef_info[rownames(Endothelial_Jef_info)%in%Endothelial_dev,]$chenCluster)
+length(Endothelial_dev)
+
+status <- as.character(Endothelial_Jef@meta.data$status)
+status[status=="malignant"] <- "cancerous"
+status[status=="non-malignant"] <- "non-cancerous"
+```
+
+# Heatmap Endothelial (excluding Endothelial-pericyte doublets) expression, markers of deviating cells from our signature and literature markers
+```{r}
+Endothelial_Jef$type <- ifelse(rownames(Endothelial_Jef_info) %in% Endothelial_dev, "Endothelial_dev", "Endothelial")
+Idents(Endothelial_Jef) <- Endothelial_Jef@meta.data$type
+sorted_idents <- c("Luminal", "Basal/Intermediate", 'Fibroblast', 
+                   'Endothelial', 'Endothelial_dev', 'Monocytic', 'Mast', 'T','B')
+Idents(Endothelial_Jef) <- factor(x =Idents(Endothelial_Jef), levels = sorted_idents)
+Endothelial_Jef$cell.type <- factor(Endothelial_Jef$type)
+Endothelial_Jef$cell.subtype <- factor(Endothelial_Jef@meta.data$cell.type.jef.L2)
+Endothelial_Jef$cell.status <- factor(Endothelial_Jef$status)
+
+Endothelial_Jef <- subset(Endothelial_Jef, subset = cell.subtype %in% c("Arterial ECs", 
+                                                                      "ECs (Unfolded prot resp)", 
+                                                                      "Endothelial-Pericyte", 
+                                                                      "HEVs and Venous ECs",
+                                                                      "Tip cells"))
+Endothelial_Jef$cell.subtype <- factor(Endothelial_Jef$cell.subtype)
+Endothelial_Jef_info <- Endothelial_Jef@meta.data
+
+mat <- table(Endothelial_Jef_info$seurat_clusters, Endothelial_Jef_info$cell.subtype)
+mat <- scale(mat)
+Idents(Endothelial_Jef) <- "cell.type"
+
+genes_ordered_by_loadings <- rownames(Endothelial_pca_loadings_sign[order(abs(Endothelial_pca_loadings_sign[, "PC_2"]), decreasing = TRUE),])
+Endothelial_markers <- intersect(genes_ordered_by_loadings, rownames(Endothelial_dev_markers_all[Endothelial_dev_markers_all$top30_loadings,]))
+# Endothelial_dev_markers_all <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable14.1_Endothelial_withoutdoublets_dev_findmarkers_all", ".csv"))
+# Endothelial_markers <- rownames(Endothelial_dev_markers_all[Endothelial_dev_markers_all$specific == TRUE & 
+#                               Endothelial_dev_markers_all$overlap_aggressiveness_signature == TRUE,])
+
+# aec <- c('FBLN5', 'GJA5', 'FN1')
+# peri <- c('NDUFA4L2', 'ACTA2', 'RGS5', 'HIGD1B')
+# hev <-  c('ACKR1', 'SELP')
+# lec <- c('PROX1')
+# tip <- c('ESM1', 'INSR')
+
+# Endothelial_litterature_markers <-c(aec, peri, hev, lec, tip)
+# Endothelial_litterature_markers <- intersect(Endothelial_litterature_markers, rownames(Endothelial_Jef))
+
+# genes <- unlist(Endothelial_litterature_markers) # %>% unique()
+
+columns_to_plot <- c("cell.type", "cell.subtype", "cell.status")
+col_fun <- circlize::colorRamp2(c(-2, 0, 2), colors = c("#18528f", "white", "#a81d1d"))
+Endothelial_Jef_info <- Endothelial_Jef_info[, columns_to_plot]
+write.csv(Endothelial_Jef_info, paste0(PATH_FIGSHARE, "Figure5B_middle_Data", ".csv"))
+write.csv(Endothelial_Jef_info, paste0(PATH_FIGSHARE, "SupplementaryFigure13.3_Figure5B_middle_Data", ".csv"))
+
+annot_cols <- list(
+  cell.type = setNames(c("blue", "red"), levels(Endothelial_Jef_info$cell.type)),
+  cell.subtype = setNames(c("orange", "purple", "green", "darkblue", "gray"),
+                          levels(Endothelial_Jef_info$cell.subtype)),
+  cell.status = setNames(c("blue", "gray"), levels(Endothelial_Jef_info$cell.status)))
+
+heatmapAnnot <- rowAnnotation(
+  df = Endothelial_Jef_info,
+  show_annotation_name = TRUE,
+  show_legend = TRUE,
+  col = annot_cols)
+
+Endothelial_Jef <- ScaleData(Endothelial_Jef, features = rownames(Endothelial_Jef), verbose = FALSE)
+
+marker_titles <- c("Arterial ECs", "Pericytes", "HEV and Venous ECs", "Tip cells")
+
+genes <- unlist(intersect(c(aec, peri, hev, lec, tip), rownames(Endothelial_Jef)))
+plot_mat = t(as.matrix(Endothelial_Jef[["RNA"]]@scale.data[genes,]))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "Figure5B_right_Data", ".csv"))
+
+plot_mat_labels <- plot_mat
+plot_mat_labels[,colnames(plot_mat_labels) %in% aec] <- "Arterial ECs"
+plot_mat_labels[,colnames(plot_mat_labels) %in% peri] <- "Pericytes"
+plot_mat_labels[,colnames(plot_mat_labels) %in% hev] <- "HEV and Venous ECs"
+plot_mat_labels[,colnames(plot_mat_labels) %in% c(lec, tip)] <- "Tip cells"
+
+ht_markers <- Heatmap(plot_mat,
+              show_column_names = T, 
+              show_row_names = F,
+              # column_title = marker_titles[1],
+              column_split = plot_mat_labels[1,],
+              column_title_rot = 45,
+              column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+              row_split = Endothelial_Jef_info[,c("cell.type", "cell.subtype")],
+              row_title = NULL,
+              clustering_method_rows = "complete",
+              cluster_columns = F, 
+              cluster_rows = F,
+              col = circlize::colorRamp2(c(-2,0,2), colors = c("#18528f", "white", "#a81d1d")),
+              left_annotation = heatmapAnnot,
+              show_heatmap_legend = F,
+              column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"),
+              border_gp = gpar(col = "black", lty = 1))
+
+# n <- 2
+# 
+# for (markers in list(peri, hev, c(lec, tip))){
+#   genes <- unlist(intersect(markers, rownames(Endothelial_Jef)))
+#   plot_mat = t(as.matrix(Endothelial_Jef[["RNA"]]@scale.data[genes,]))
+#   
+#   ht <- Heatmap(plot_mat,
+#               show_column_names = T, 
+#               show_row_names = F,
+#               column_title = marker_titles[n],
+#               column_title_rot = 45,
+#               column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+#               row_split = Endothelial_Jef_info[,c("cell.type", "cell.subtype")],
+#               row_title = NULL,
+#               clustering_method_rows = "complete",
+#               cluster_columns = F, 
+#               cluster_rows = F,
+#               col = circlize::colorRamp2(c(-2,0,2), colors = c("#18528f", "white", "#a81d1d")),
+#               # left_annotation = heatmapAnnot,
+#               show_heatmap_legend = F,
+#               column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"),
+#               border_gp = gpar(col = "black", lty = 1))
+#   ht_markers <- ht_markers + ht
+#   n <- n + 1
+# }
+# 
+# genes <- intersect(unique(c(aec, peri, hev, lec, tip)), rownames(Endothelial_Jef)) 
+# plot_mat <- t(as.matrix(Endothelial_Jef[["RNA"]]@scale.data[genes,]))
+# write.csv(plot_mat, paste0(PATH_FIGSHARE, "Figure5B_right_Data", ".csv"))
+
+signature_titles <- c("Decipher", "Prostadiag", "OncotypeDx")
+genes <- unlist(intersect(decipher, rownames(Endothelial_Jef)))
+plot_mat = t(as.matrix(Endothelial_Jef[["RNA"]]@scale.data[genes,]))
+
+ht_signatures <- Heatmap(plot_mat,
+              show_column_names = T, 
+              show_row_names = F,
+              column_title = signature_titles[1],
+              # column_title_rot = 0,
+              column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+              row_split = Endothelial_Jef_info[,c("cell.type", "cell.subtype")],
+              row_title = NULL,
+              clustering_method_rows = "complete",
+              cluster_columns = F, 
+              cluster_rows = F,
+              col = circlize::colorRamp2(c(-2,0,2), colors = c("#18528f", "white", "#a81d1d")),
+              left_annotation = heatmapAnnot,
+              show_heatmap_legend = F,
+              column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"),
+              border_gp = gpar(col = "black", lty = 1))
+
+n <- 2
+
+for (signature in list(prostadiag, oncotypeDX)){
+  genes <- unlist(intersect(signature, rownames(Endothelial_Jef)))
+  plot_mat = t(as.matrix(Endothelial_Jef[["RNA"]]@scale.data[genes,]))
+  
+  ht <- Heatmap(plot_mat,
+              show_column_names = T, 
+              show_row_names = F,
+              column_title = signature_titles[n],
+              # column_title_rot = 0,
+              column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+              row_split = Endothelial_Jef_info[,c("cell.type", "cell.subtype")],
+              row_title = NULL,
+              clustering_method_rows = "complete",
+              cluster_columns = F, 
+              cluster_rows = F,
+              col = circlize::colorRamp2(c(-2,0,2), colors = c("#18528f", "white", "#a81d1d")),
+              # left_annotation = heatmapAnnot,
+              show_heatmap_legend = F,
+              column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic"),
+              border_gp = gpar(col = "black", lty = 1))
+  ht_signatures <- ht_signatures + ht
+  n <- n + 1
+}
+
+# write.csv(plot_mat, paste0(PATH_FIGSHARE, "Figure5B_right_Data", ".csv"))
+genes <- intersect(unique(c(decipher, oncotypeDX, prostadiag)), rownames(Endothelial_Jef))
+plot_mat = t(as.matrix(Endothelial_Jef[["RNA"]]@scale.data[genes,]))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "SupplementaryFigure13.3_right_Data", ".csv"))
+
+# Fibroblast markers
+genes <- unlist(intersect(Endothelial_markers, rownames(Endothelial_Jef)))
+plot_mat = t(as.matrix(Endothelial_Jef[["RNA"]]@scale.data[genes,]))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "Figure5B_left_Data", ".csv"))
+write.csv(plot_mat, paste0(PATH_FIGSHARE, "SupplementaryFigure13.3_left_Data", ".csv"))
+# Endothelial_labels_colors = signature_df[Endothelial_markers,"color"]
+
+ht_left <- Heatmap(matrix = plot_mat, 
+               show_column_names = T, 
+               show_row_names = F,
+               column_title_gp = gpar(fontsize = 6, rot = 45),
+               row_split = Endothelial_Jef_info[,c("cell.type", "cell.subtype")],
+               row_title = NULL,
+               clustering_method_rows = "complete",
+               cluster_columns = F, 
+               cluster_rows = F,
+               col = circlize::colorRamp2(c(-2,0,2), colors = c("#18528f", "white", "#a81d1d")),
+               show_heatmap_legend = T,
+               name = "expression.level",
+               column_names_gp = gpar(fontfamily = "sans", fontsize = 10, fontface = "italic", 
+                                      col="black"),
+               border_gp = gpar(col = "black", lty = 1))
+ht_list_markers <- ht_left + ht_markers
+png(paste0(PATH_FIG_HEATMAPS, "Figure5B_Endothelial_withtoudoublets_markers_sc_markers", ".png"), width = 9, height = 7, res = 600, units = "in")
+draw(ht_list_markers)
+dev.off()
+
+ht_list_signatures <- ht_left + ht_signatures
+png(paste0(PATH_FIG_HEATMAPS, "SupplementaryFigure13.3_Endothelial_withtoudoublets_markers_sc_signature", ".png"), width = 16, height = 7, res = 600, units = "in")
+draw(ht_list_signatures)
+dev.off()
+```
+
+# Further validation of marker genes related to deviating luminal and fibroblasts
+```{r}
+chen <- readRDS(paste0(PATH_DATA, "chenSeuratObj.rds"))
+cellannot <- read.csv(paste0(PATH_DATA, "cell_annotation.csv"))
+cellannot["cellids"] = gsub("-", '.', cellannot$cellID)
+cellannot["type"][cellannot["type"]=="Monolytic"] <- "Monocyte"
+cellannot["type"][cellannot["type"]=="B cel"] <- "B"
+cellannot["celltype"] = cellannot["type"]
+cellannot["celltype"][cellannot["celltype"]=="Cell Cycle"] <- "Luminal"
+cellannot["celltype"][cellannot$cellids %in% Luminal_dev,] <- "Luminal dev"
+cellannot["celltype"][cellannot$cellids %in% Fibroblast_dev,] <- "Fibroblast dev"
+cellannot["celltype"][cellannot$cellids %in% Endothelial_dev,] <- "Endothelial dev"
+
+chen$sampleID <- cellannot$sampleID
+chen$celltype <- cellannot$celltype
+print(unique(chen$celltype))
+chen$status <- cellannot$status
+Idents(chen) <- chen@meta.data$celltype
+chen <- subset(chen, subset = celltype != "unknown")
+chen_info <- chen@meta.data
+sorted_idents <- c("Luminal", "Luminal dev", "Basal/Intermediate", 'Fibroblast', "Fibroblast dev", 'Endothelial', "Endothelial dev", 'Monocyte', 'Mast', 'T', 'B')
+Idents(chen) <- factor(x =Idents(chen), levels = sorted_idents)
+chen_norm <- NormalizeData(chen)
+chen_primaries_subtype <- subset(chen_norm, subset = sampleID %in% c("SC171", "SC172"), invert=T)
+
+specific_commercial_signature <- c('THBS2', 'NUSAP1', 'UBE2C', 'MOXD1', 'SFRP2', 'COMP', 'COL10A1', 'NOX4', 'CXCL14', 'VCAN', 'COL8A1', 'SFRP4', 'GSN', 'TPX2')
+
+genes <- unique(c(specific_commercial_signature))
+signature_dotplot <- DotPlot(chen_primaries_subtype, features = genes) + RotatedAxis() + 
+  labs(title = "", x = "", y = "", color = "Avg. exp. scale", size = "Per. exp") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, face = "italic"), legend.direction = "horizontal", legend.position = c(-0.1, -0.4),
+        plot.margin = margin(t = 10, r = 10, b = 70, l = 10))
+ggsave(paste0(PATH_FIG_DOTPLOT, "SupplementaryFigure13.4_signature_dotplot.png"), plot = signature_dotplot, width = 6, height = 6, dpi = 600)
+write.csv(signature_dotplot$data, paste0(PATH_FIGSHARE, "SupplementaryFigure13.4_signature_dotplot.csv"))
+```
+
+```{r}
+combined_markers_CTHRC1_dotplot <- DotPlot(Endothelial_Jef, features = combined_markers_CTHRC1, group.by = 'cell.type.jef.L2')+ RotatedAxis() + coord_flip() +
+  theme(legend.position = c(1.1, 0.2), plot.margin = unit(c(1, 5.5, 0.2, 0.2), "cm"), axis.text.y = element_text(family = "sans", face = "italic"))
+
+CAFs_specific_dotplot <- DotPlot(Endothelial_Jef, features = CAFs_specific, group.by = 'cell.type.jef.L2')+ RotatedAxis() + coord_flip() + 
+  theme(legend.position = c(1.1, 0.2), plot.margin = unit(c(1, 5.5, 0.2, 0.2), "cm"), axis.text.y = element_text(family = "sans", face = "italic"))
+```
+
+
+```{r}
+# For example, assign custom groups to cells
+custom_groups <- rep(NA, ncol(chen_primaries))
+names(custom_groups) <- colnames(chen_primaries)
+
+# Set your own grouping (based on some logic or external list)
+custom_groups[colnames(chen_primaries)[chen_primaries$celltype == "Luminal"]] <- "Luminal"
+custom_groups[colnames(chen_primaries)[chen_primaries$celltype == "Fibroblast"]] <- "Fibroblast"
+custom_groups[colnames(chen_primaries)[chen_primaries$celltype == "Endothelial"]] <- "Endothelial"
+custom_groups[colnames(chen_primaries)[
+  colnames(chen_primaries) %in% c(Fibroblast_dev, Luminal_dev, Endothelial_dev)]
+  ] <- "Deviating cells"
+custom_groups[is.na(custom_groups)] <- "Other"  # Fill the rest
+
+# Add to metadata
+chen_primaries$custom_group <- custom_groups
+
+custom_umap <- DimPlot(chen_primaries, reduction = "umap", label = FALSE, group.by = "custom_group", cols = c("Luminal" = "#DB0319", "Fibroblast" = "#3771AC", "Endothelial" = "#41A33B", "Deviating cells"="black", "Other" = "#C9C9C9")) + labs(
+    title = "",       # Plot title
+    x = "UMAP 1",                            # X-axis label
+    y = "UMAP 2",                            # Y-axis label
+    # color = "Cell Type"                     # Legend title
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"), # Center & style title
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+ggsave(paste0(PATH_FIG_SC, "Figure1E_chen_custom_umap.png"), plot = custom_umap, width = 6, height = 5, dpi = 600)
+```

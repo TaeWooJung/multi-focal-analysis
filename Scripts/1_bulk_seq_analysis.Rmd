@@ -1,0 +1,1120 @@
+---
+title: "1. Bulk sequencing analysis"
+output: html_document
+date: "2025-05-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load global configuration
+```{r}
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/global_config.R")
+```
+
+# MLN-RP-NL comparison in the locally advanced prostate cancer cohort
+```{r}
+LA_counts <- read.table(paste0(PATH_DATA, "locally_advanced_counts.csv"), header=T, row.name=1, sep=",")
+colnames(LA_counts) <- ifelse(colnames(LA_counts) != "HR_ID5_MLNL", colnames(LA_counts), "HR_ID5_NL") #one sample was wrongly labeled
+# write.csv(LA_counts, paste0(PATH_FIGSHARE, "locally_advanced_cohort_counts", ".csv"))
+
+LA_info <- data.frame(sapply(colnames(LA_counts), 
+                             function(x) str_extract(str_split(x, "_")[[1]][3],
+                                                     "[^0-9]+")))
+colnames(LA_info) <- c("sampletype")
+LA_info$patID <-  sapply(colnames(LA_counts), function(x) str_split(x, "_")[[1]][2])
+
+# MLN vs. RP
+# metadata <- LA_info[LA_info$sampletype!="NL",]
+# metadata$patID <- factor(metadata$patID)
+# metadata$sampletype <- factor(metadata$sampletype)
+# counts <- LA_counts[, rownames(metadata)]
+# keep <- filterByExpr(counts, group = metadata$sampletype)
+# counts <- counts[keep,]
+# dds <- DESeqDataSetFromMatrix(counts, design = ~patID+sampletype, colData=metadata)
+# dds <- DESeq(dds)
+# LA_MLN_RP_res <- results(dds, contrast=c("sampletype","MLN","RP"))
+# write.csv(LA_MLN_RP_res, paste0(PATH_DESEQ2, "SupplementaryTable3.2_LA_MLN_RP_res", ".csv"))
+
+LA_MLN_RP_res <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable3.2_LA_MLN_RP_res", ".csv"), row.names = 1)
+select_down <- which((LA_MLN_RP_res$padj < .05)&(LA_MLN_RP_res$log2FoldChange<=-1.5))
+select_up <- which((LA_MLN_RP_res$padj < .05)&(LA_MLN_RP_res$log2FoldChange>=1.5))
+LA_MLN_RP_down = LA_MLN_RP_res[select_down, ]
+LA_MLN_RP_up = LA_MLN_RP_res[select_up, ]
+print(dim(LA_MLN_RP_down))
+print(dim(LA_MLN_RP_up))
+
+# RP vs. NL
+# metadata <- LA_info[LA_info$sampletype!="MLN",]
+# metadata$patID <- factor(metadata$patID)
+# metadata$sampletype <- factor(metadata$sampletype)
+# counts <- LA_counts[, rownames(metadata)]
+# keep <- filterByExpr(counts, group = metadata$sampletype)
+# counts <- counts[keep,]
+# dds <- DESeqDataSetFromMatrix(counts, design = ~patID+sampletype, colData=metadata)
+# dds <- DESeq(dds)
+# LA_RP_NL_res <- results(dds, contrast=c("sampletype","RP","NL"))
+# write.csv(LA_RP_NL_res, paste0(PATH_DESEQ2, "SupplementaryTable3.1_LA_RP_NL_res", ".csv"))
+
+LA_RP_NL_res <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable3.1_LA_RP_NL_res", ".csv"), row.names = 1)
+select_down <- which((LA_RP_NL_res$padj < .05)&(LA_RP_NL_res$log2FoldChange<=-1.5))
+select_up <- which((LA_RP_NL_res$padj < .05)&(LA_RP_NL_res$log2FoldChange>=1.5))
+LA_RP_NL_down = LA_RP_NL_res[select_down, ]
+LA_RP_NL_up = LA_RP_NL_res[select_up, ]
+print(dim(LA_RP_NL_down))
+print(dim(LA_RP_NL_up))
+```
+
+# MLN-RP comparison in the de novo prostate cancer cohort
+```{r}
+DN_counts <- read.table(paste0(PATH_DATA, "de_novo_counts_47.csv"), header=T, row.name=1, sep=",")
+DN_counts <- subset(DN_counts, select = -M1RP_ID23_RP4)
+colnames(DN_counts) <- ifelse(colnames(DN_counts) != "M1RP_ID23_RP44",
+                              colnames(DN_counts), "M1RP_ID23_RP4") 
+# write.csv(DN_counts, paste0(PATH_FIGSHARE, "de_novo_cohort_counts", ".csv"))
+
+#one sample was re-sequenced because of bad quality 
+DN_info <- data.frame(sapply(colnames(DN_counts), 
+                             function(x) str_extract(str_split(x, "_")[[1]][3],
+                                                     "[^0-9]+")))
+colnames(DN_info) <- c("sampletype")
+DN_info$patID <-  sapply(colnames(DN_counts), 
+                           function(x) str_split(x, "_")[[1]][2])
+
+# MLN vs. RP
+# metadata <- DN_info
+# metadata$patID <- factor(metadata$patID)
+# metadata$sampletype <- factor(metadata$sampletype)
+# counts <- DN_counts[, rownames(metadata)]
+# keep <- filterByExpr(counts, group = metadata$sampletype)
+# counts <- counts[keep,]
+# dds <- DESeqDataSetFromMatrix(counts, design = ~patID+sampletype, colData=metadata)
+# dds <- DESeq(dds)
+# DN_MLN_RP_res <- results(dds, contrast=c("sampletype","MLN","RP"))
+# write.csv(DN_MLN_RP_res, paste0(PATH_DESEQ2, "SupplementaryTable4.2_DN_MLN_RP_res", ".csv"))
+
+DN_MLN_RP_res <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable4.2_DN_MLN_RP_res", ".csv"), row.names = 1)
+select_down <- which((DN_MLN_RP_res$padj < .05)&(DN_MLN_RP_res$log2FoldChange<=-1.5))
+select_up <- which((DN_MLN_RP_res$padj < .05)&(DN_MLN_RP_res$log2FoldChange>=1.5))
+DN_MLN_RP_down = DN_MLN_RP_res[select_down, ]
+DN_MLN_RP_up = DN_MLN_RP_res[select_up, ]
+
+print(dim(DN_MLN_RP_down))
+print(dim(DN_MLN_RP_up))
+```
+
+# RP-NL comparison in the de novo and TCGA prostate cancer cohort
+```{r}
+tcga_counts <- read.table(paste0(PATH_DATA, "TCGA-PRAD.RP_NL.csv.gz"), sep=",",header=T, row.name=1)
+# write.csv(tcga_counts, paste0(PATH_FIGSHARE, "tcga_prad_counts", ".csv"))
+
+# TCGAmetadata <- data.frame(sampleID=colnames(tcga_counts))
+# TCGAmetadata$sampletype <- factor(c(rep(c("RP"),54), rep(c("NL"), 52)))
+# TCGAmetadata$patID <- substr(TCGAmetadata$sampleID, 1, nchar(TCGAmetadata$sampleID)-4)
+# TCGAmetadata$patID <- factor(TCGAmetadata$patID)
+# keep <- filterByExpr(tcga_counts, group = TCGAmetadata$sampletype)
+# counts <- tcga_counts[keep,]
+# dds <- DESeqDataSetFromMatrix(round(counts), design = ~patID+sampletype, colData=TCGAmetadata)
+# dds <- DESeq(dds)
+# TCGA_RP_NL_res <- results(dds, contrast=c("sampletype","RP","NL"))
+# write.csv(TCGA_RP_NL_res, paste0(PATH_DESEQ2, "SupplementaryTable4.1_TCGA_RP_NL_res", ".csv"))
+
+TCGA_RP_NL_res <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable4.1_TCGA_RP_NL_res", ".csv"), row.names = 1)
+select_down <- which((TCGA_RP_NL_res$padj < .05)&(TCGA_RP_NL_res$log2FoldChange<=-1.5))
+select_up <- which((TCGA_RP_NL_res$padj < .05)&(TCGA_RP_NL_res$log2FoldChange>=1.5))
+TCGA_RP_NL_down = TCGA_RP_NL_res[select_down, ]
+TCGA_RP_NL_up = TCGA_RP_NL_res[select_up, ]
+print(dim(TCGA_RP_NL_down))
+print(dim(TCGA_RP_NL_up))
+```
+
+# Obtaining progression signature via PCA
+```{r}
+# PCA using all genes
+data <- cbind(DN_counts, LA_counts)
+cohort <- sub("_.*", "", colnames(data))
+cohort <- gsub("HR", "LA", cohort)
+cohort <- gsub("M1RP", "DN", cohort)
+data_info <- as.data.frame(cohort)
+colnames(data_info) = "cohort"
+rownames(data_info) = colnames(data)
+data_info["patID_id"] = sub("^[^_]+_([^_]+)_.*$", "\\1", rownames(data_info))
+data_info["sampletype"] =  sub(".*_([^0-9]+)[0-9]*$", "\\1",  rownames(data_info))
+data_info["sampleID"] = sub(".*_.*_(.*)", "\\1", rownames(data_info))
+
+ranks <- apply(data, 2, rank)
+data.pca = prcomp(t(ranks), rank.=2, retx=T,scale=F,center=T)
+a = summary(data.pca)
+pc = as.data.frame(a$x)
+pca_scores <- cbind(pc, data_info["cohort"], data_info["sampletype"])
+# write.csv(pca_scores, paste0(PATH_FIGSHARE, "SupplementaryFigure2_Data", ".csv"))
+
+pca_signature_plot <- ggplot(data=pca_scores, aes(x=PC1, y=PC2, color=sampletype))+
+  geom_point(aes(shape=cohort), size=2)+
+  labs(x="Principal Component 1", y="Principal Component 2")+
+  theme_classic()
+# ggsave(paste0(PATH_FIG_SIGNATURE, "SupplementaryFigure2_LA_DN_PCAplot_allgenes", ".svg"), plot=pca_signature_plot, width = 8, height = 8)
+```
+
+# 575 DEGs were commonly expressed when DEGs from MLN_RP and RP_NL were compared
+```{r}
+LA_MLN_RP_NL_down <- intersect(union(rownames(LA_MLN_RP_down), rownames(DN_MLN_RP_down)),
+                               union(rownames(LA_RP_NL_down), rownames(TCGA_RP_NL_down)))
+LA_MLN_RP_NL_up <- intersect(union(rownames(LA_MLN_RP_up), rownames(DN_MLN_RP_up)),
+                             union(rownames(LA_RP_NL_up), rownames(TCGA_RP_NL_up)))
+progression <- union(LA_MLN_RP_NL_down, LA_MLN_RP_NL_up)
+length(progression)
+progression_df <- data.frame(Genes = progression) # 575 DEGs
+# write.csv(progression_df, paste0(PATH_SIGNATURE, "progression_signature", ".csv"), row.names = FALSE)
+```
+
+# Spearman rank-based PCA using 575 DEGs
+```{r}
+data <- cbind(LA_counts, DN_counts)
+data <- data[progression,]
+
+cohort <- sub("_.*", "", colnames(data))
+cohort <- gsub("HR", "LA", cohort)
+cohort <- gsub("M1RP", "DN", cohort)
+data_info <- as.data.frame(cohort)
+colnames(data_info) = "cohort"
+rownames(data_info) = colnames(data)
+data_info["patID_id"] = sub("^[^_]+_([^_]+)_.*$", "\\1", rownames(data_info))
+data_info["sampletype"] =  sub(".*_([^0-9]+)[0-9]*$", "\\1",  rownames(data_info))
+data_info["sampleID"] = sub(".*_.*_(.*)", "\\1", rownames(data_info))
+
+ranks <- apply(data, 1, rank)
+pca_result <- prcomp(t(ranks), rank.=2, retx=T,scale=F,center=T)
+pca_scores <- as.data.frame(pca_result$rotation[, 1:2])
+pca_scores <- cbind(pca_scores, data_info["cohort"], data_info["sampletype"])
+# write.csv(pca_scores, paste0(PATH_FIGSHARE, "SupplementaryFigure3_Data", ".csv"))
+
+pca_signature_plot <- ggplot(data=pca_scores, aes(x=PC1, y=PC2, color=sampletype))+
+  geom_point(aes(shape=cohort), size=2)+
+  labs(x="Principal Component 1", y="Principal Component 2")+
+  theme_classic()
+# ggsave(paste0(PATH_FIG_SIGNATURE, "SupplementaryFigure3_LA_DN_PCAplot", ".svg"), plot=pca_signature_plot, width = 8, height = 4)
+```
+
+```{r}
+pca_loadings = data.frame(pca_result$x)
+pca_loadings = pca_loadings[, c("PC1", "PC2")]
+pca_loadings$absPC1 <- abs(pca_loadings$PC1) 
+pca_loadings$absPC2 <- abs(pca_loadings$PC2) 
+pca_loadings$diff <-pca_loadings$absPC1-pca_loadings$absPC2
+
+progression_signature = rownames(pca_loadings[(pca_loadings$absPC1>150)&(pca_loadings$diff>50),])
+print(length(progression_signature))
+
+progression_signature_df <- data.frame(Genes = progression_signature)
+# write.csv(progression_signature_df, paste0(PATH_SIGNATURE, "progression_signature_top225_PC1", ".csv"), row.names = F)
+```
+
+# 19 genes from the progression model of Schmidt et al. (2018)
+```{r}
+schmidt <- c('PAGE4','KCTD14','KIAA1210','KRT23','TGM4','RP3-523K23.2','KRT5',
+             'C20orf166-AS1','MIR205HG','RP11-746E8.1','SMOC1','COL13A1','RBFOX3',
+             'RP11-160A10.2','FAM83B','FLRT3','MUC4','KRT15','HEATR8')
+print(length(schmidt))
+print(length(intersect(schmidt, progression_signature)))
+all_genes <- intersect(rownames(LA_counts), rownames(tcga_counts))
+schmidt_in_signature <- intersect(schmidt, progression_signature)
+schmidt_not_in_signature <- intersect(setdiff(schmidt, progression_signature), all_genes)
+genes_not_in_signature <- setdiff(all_genes, progression_signature)
+print(schmidt_in_signature)
+
+# Compared to the rest of the genes
+print(length(schmidt_in_signature))
+print(length(progression_signature))
+print(length(schmidt_not_in_signature))
+print(length(genes_not_in_signature))
+print(fisher.test(matrix(c(length(schmidt_in_signature), 
+                           length(progression_signature),
+                           length(schmidt_not_in_signature),
+                           length(genes_not_in_signature)), nrow=2), 
+                  alternative="greater"))
+
+# Compared to a random gene signature of the same size
+set.seed(17)
+random_signature <-  sample(all_genes, length(progression_signature))
+schmidt_in_random_signature = intersect(schmidt, random_signature)
+
+print(fisher.test(matrix(c(length(schmidt_in_signature), 
+                           length(progression_signature),
+                           length(schmidt_in_random_signature),
+                           length(random_signature)), nrow=2), 
+                  alternative="greater"))
+```
+
+
+```{r}
+data <- cbind(LA_counts, DN_counts)
+data <- data[progression_signature,]
+
+cohort <- sub("_.*", "", colnames(data))
+cohort <- gsub("HR", "LA", cohort)
+cohort <- gsub("M1RP", "DN", cohort)
+data_info <- as.data.frame(cohort)
+colnames(data_info) = "cohort"
+rownames(data_info) = colnames(data)
+data_info["patID"] = sub("^[^_]+_([^_]+)_.*$", "\\1", rownames(data_info))
+data_info["sampletype"] =  sub(".*_([^0-9]+)[0-9]*$", "\\1",  rownames(data_info))
+data_info["sampleID"] = sub(".*_.*_(.*)", "\\1", rownames(data_info))
+
+ranks <- apply(data, 1, rank)
+pca_result <- prcomp(t(ranks), rank.=2, retx=T,scale=F,center=T)
+pca_scores <- as.data.frame(pca_result$rotation[, 1:2])
+pca_scores <- cbind(pca_scores, data_info["cohort"], data_info["sampletype"])
+# write.csv(pca_scores, paste0(PATH_FIGSHARE, "Figure1C_left_Data", ".csv"))
+
+pca_signature_plot <- ggplot(data=pca_scores, aes(x=PC1, y=PC2, color=sampletype))+
+  geom_point(aes(shape=cohort), size=2)+
+  labs(x="Principal Component 1", y="Principal Component 2")+
+  theme_classic()
+# ggsave(paste0(PATH_FIG_SIGNATURE, "Figure1C_left_LA_DN_PCAplot_top200_PC1", ".svg"), plot=pca_signature_plot, width = 8, height = 4)
+```
+
+# Plot patients seeding potential based on the progression signature (225 genes)
+```{r}
+PerformPCA <- function(patID, data_info, cohort, signature, data){
+  set.seed(17)
+  pat_info <- data_info[(data_info$cohort==cohort)&(data_info$patID==patID),]
+  pat_info$patID <- patID
+  pat_counts <- data[signature, rownames(pat_info)]
+  pat_ranks <- apply(pat_counts, 1, rank)
+  pca_result <- prcomp(t(pat_ranks))
+  pca_scores <- as.data.frame(pca_result$rotation[, 1:2])
+  pca_scores <- cbind(pca_scores, pat_info[,c("cohort", "sampletype", "sampleID", "patID")])
+  return (pca_scores)
+}
+
+# Function to create individual plot for each patient
+create_patient_plot <- function(patient_ID, tGNS, is_last_plot = FALSE) {
+  # Define title, font, and transparency
+  x_title = "Principle Component 1"
+  y_title_size = 10
+  region_alpha = 0.15
+  datapoint_size = 2
+  # Define colors for regions
+  region_colors <- c("High" = "#ff0000", "Intermediate" = "#ffa500", "Low" = "#008000")
+  # Define shape mapping for sample types
+  shape_mapping <- c("RP" = 16,  # Circle
+                     "MLN" = 17,  # Triangle
+                     "NL" = 15,   # Square
+                     "tNGS agg" = 22)  # Square border
+  # Define colors for data points
+  datapoint_colors <- c("3+3" = "#89CFF0", "3+4" = "#0096FF", "3+5" = "#00008B", 
+                        "4+3" = "#ffc100", "4+4" = "#ff7400", "4+5" = "#ff0000",
+                        "5+3" = "#C38560", "5+4" = "#9B7B78", "5+5" = "#514143", "NA" = "gray")
+  # Filter data for the current patient
+  patient_data <- subset(df, patID == patient_ID) %>% 
+            as.data.frame() %>% 
+            arrange(sampleID)
+  patient_heuristic_lines <- subset(heuristic_lines, patID == patient_ID)
+  n <- dim(patient_data)[1] # number of samples
+  # Region color
+  region_data <- data.frame(
+    region = c("High", "Intermediate", "Low"),
+    xmin = c(-0.81, patient_heuristic_lines$thres, patient_heuristic_lines$RP),
+    xmax = c(patient_heuristic_lines$thres, patient_heuristic_lines$RP, 0.81), 
+    ymin = 0,
+    ymax = Inf
+  )
+  # Data point color
+  x_text = ifelse(is_last_plot, element_text(), element_blank())
+  if (is_last_plot == FALSE) {
+    p <- ggplot() +
+    # Add colored vertical regions for the current patient
+    geom_rect(data = region_data, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = region), alpha = region_alpha) +
+    # Scatter plot of PC1 values for the current patient
+    geom_point(data = patient_data, aes(x = PC1, y = sampleID, shape = sampletype, color = GS), size = datapoint_size) +
+    # Highlight samples confirmed to be aggressive from tGNS analysis
+    geom_point(data = subset(patient_data, rownames(patient_data) %in% tGNS), aes(x = PC1, y = sampleID, shape = aggressive), fill = NA, color = "black", size = 5, stroke = 1) +
+    # Set color scale
+    scale_fill_manual(values = region_colors) +
+    # Assign custom shapes
+    scale_shape_manual(values = shape_mapping) +
+    # Assign custom colors based on Gleason score
+    scale_color_manual(values = datapoint_colors) +
+    # Axis limits and theme
+    xlim(-0.81, 0.81) +
+    theme_minimal() +
+    labs(title = NULL, x = NULL, y = patient_ID, shape = "Sample type", fill = "Seeding potential",  color = "Gleason score") +
+    theme(
+      legend.position = "right",  # No legend for each individual plot
+      axis.text.x = element_blank(),  # Only show x-axis text for the last plot
+      axis.title.x = element_blank(),  # Only show x-axis title for the last plot
+      axis.title.y = element_text(size = y_title_size),
+      plot.margin = margin(0, 0, 0, 0),
+      panel.grid = element_blank()
+    )
+  } else {
+    p <- ggplot() +
+    # Add colored vertical regions for the current patient
+    geom_rect(data = region_data, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = region), alpha = region_alpha) +
+    # Scatter plot of PC1 values for the current patient
+    geom_point(data = patient_data, aes(x = PC1, y = sampleID, shape = sampletype, color = GS), size = datapoint_size) +
+    # Highlight samples confirmed to be aggressive from tGNS analysis
+    geom_point(data = subset(patient_data, rownames(patient_data) %in% tGNS), aes(x = PC1, y = sampleID, shape = aggressive), fill = NA, color = "black", size = 5, stroke = 1) +
+    # Set color scale
+    scale_fill_manual(values = region_colors) +
+    # Assign custom shapes
+    scale_shape_manual(values = shape_mapping) +
+    # Assign custom colors based on Gleason scoreß
+    scale_color_manual(values = datapoint_colors) +
+    # Axis limits and theme
+    xlim(-0.81, 0.81) +
+    theme_minimal() +
+    labs(title = NULL, x = x_title, y = patient_ID, shape = "Sample type", fill = "Seeding potential",  color = "Gleason score") +
+    theme(
+      legend.position = "right",
+      axis.title.y = element_text(size = y_title_size),
+      plot.margin = margin(0, 0, 0, 0),
+      panel.grid = element_blank()
+    )
+  }
+  # Create plot for the current patient
+  return(p)
+}
+```
+
+```{r}
+# Locally advanced cohort
+LA_tGNS = c("HR_ID4_RP2", "HR_ID4_RP3", "HR_ID5_RP1", "HR_ID5_RP2", 
+            "HR_ID6_RP2", "HR_ID6_RP3", "HR_ID6_RP4",
+            "HR_ID9_RP1", "HR_ID10_RP4", "HR_ID10_RP6")
+
+LA_pat_one_S = c("ID1", "ID3", "ID4", "ID15", "ID18")
+LA_pat_multiple_S = c("ID5", "ID6", "ID7", "ID9", "ID10", "ID11", "ID17")
+LA_pat_NS = c("ID2", "ID16","ID19", "ID24", "ID25")
+
+LA_pat = c(LA_pat_multiple_S, LA_pat_one_S, LA_pat_NS)
+
+tGNS <- LA_tGNS
+
+LA_pca_pat_scores = data.frame()
+mln_lines = c()
+thres_lines = c()
+rp_lines = c()
+
+for (patID in LA_pat) {
+  LA_pca_pat = PerformPCA(patID, data_info=data_info, cohort="LA", signature=progression_signature, data=data)
+  if (max(LA_pca_pat$PC1[LA_pca_pat$sampletype=="MLN"])>0){
+    LA_pca_pat$PC1 = - LA_pca_pat$PC1}
+  maxRP = max(LA_pca_pat["PC1"][LA_pca_pat["sampletype"]=="RP"])
+  medianMLN = median(LA_pca_pat["PC1"][LA_pca_pat["sampletype"]=="MLN"])
+  thres = medianMLN+2/3*abs(medianMLN-maxRP)
+
+  mln_lines = union(mln_lines, medianMLN)
+  rp_lines = union(rp_lines, maxRP)
+  thres_lines = union(thres_lines, thres)
+  LA_pca_pat_scores = rbind(LA_pca_pat_scores, LA_pca_pat)
+}
+LA_pca_pat_scores$patID = factor(LA_pca_pat_scores$patID, levels=LA_pat)
+
+heuristic_lines = data.frame(patID=LA_pat, MLN=mln_lines, RP=rp_lines, thres=thres_lines)
+heuristic_lines$patID = factor(heuristic_lines$patID, levels=LA_pat)
+
+LA_seeding_lesion_identification_plot <- ggplot(data=LA_pca_pat_scores, aes(x=PC1, y=PC2, color=sampletype, label=sampleID))+
+  geom_point(aes(shape=cohort), size=2)+
+  geom_text(hjust = 1, vjust = 0)+
+  labs(x="Principal Component 1", y="Principal Component 2")+
+  theme_bw()+
+  geom_vline(data = heuristic_lines, aes(xintercept = MLN), linetype = "dashed", color = "red")+
+  geom_vline(data = heuristic_lines, aes(xintercept = RP), linetype = "dashed", color = "blue")+
+  geom_vline(data = heuristic_lines, aes(xintercept = thres), linetype = "dashed", color = "purple")+
+  xlim(c(-0.7, 0.7))+
+  facet_wrap(~patID, ncol = 2)
+# ggsave(paste0(PATH_FIG_SEEDING_IDENTIFICATION, "LA_one_seeding_lesion_plot", ".svg"), plot=LA_seeding_lesion_identification_plot, width = 10, height = 10)
+
+# Create data frame for the scatter plot
+df <- LA_pca_pat_scores
+patients <- LA_pat
+
+# Add Gleason score labels
+df_GS <- df_GS <- read.table(paste0(PATH_DATA, "locally_advanced_clinical_info_FFPE.tsv"), sep = "\t", header = T)
+df_GS <- subset(df_GS, sampleId %in% rownames(df))
+rownames(df_GS) <- df_GS$sampleId
+df_GS <- df_GS[rownames(df), ]
+df_GS[df_GS == ""] <- "NA"
+df$GS <- factor(df_GS$GS)
+df[is.na(df)] <- "NA"
+df$aggressive <- rownames(df) %in% LA_tGNS
+df <- df %>%
+  mutate(aggressive = ifelse(aggressive == TRUE, "tNGS agg", aggressive))
+# write.csv(df, paste0(PATH_FIGSHARE, "Figure2A_Data", ".csv"))
+
+# Create individual plots for each patient
+plots <- lapply(patients, function(i) {
+  create_patient_plot(i, LA_tGNS, is_last_plot = i == rev(patients)[1])
+})
+
+# Combine the individual plots into one grid (stacked vertically)
+combined_plot <- wrap_plots(plots, ncol = 1)
+
+sample_counts <- df %>%
+  filter(patID %in% patients) %>%
+  count(patID)
+
+plot_heights <- sample_counts$n / dim(df)[1]*1.5  # Normalized to sum to 1
+
+# Adjust the size of the combined plot
+combined_plot <- combined_plot + plot_layout(guides = "collect", heights = plot_heights, widths = 2)  # Stack and combine guides (legends)
+# ggsave(paste0(PATH_FIG_SEEDING_IDENTIFICATION, "Figure2A_combined_patient_plots_LA.svg"), combined_plot, height = 26, width = 5, dpi = 600)
+```
+
+```{r}
+# De novo cohort
+DN_pat = c("ID3", "ID4", "ID8", "ID23", "ID26", "ID33")
+DN_pca_pat_scores = data.frame()
+
+DN_tGNS = c("M1RP_ID4_RP2", "M1RP_ID4_RP9", "M1RP_ID8_RP7", "M1RP_ID26_RP3", "M1RP_ID33_RP6")
+
+mln_lines = c()
+thres_lines = c()
+rp_lines = c()
+for (patID in DN_pat) {
+  DN_pca_pat = PerformPCA(patID, data_info=data_info, cohort="DN", signature=progression_signature, data=data)
+  if (max(DN_pca_pat$PC1[DN_pca_pat$sampletype=="MLN"])>0){
+    DN_pca_pat$PC1 = - DN_pca_pat$PC1}
+  maxRP = max(DN_pca_pat["PC1"][DN_pca_pat["sampletype"]=="RP"])
+  medianMLN = median(DN_pca_pat["PC1"][DN_pca_pat["sampletype"]=="MLN"])
+  thres = medianMLN+2/3*abs(medianMLN-maxRP)
+
+  mln_lines = union(mln_lines, medianMLN)
+  rp_lines = union(rp_lines, maxRP)
+  thres_lines = union(thres_lines, thres)
+  DN_pca_pat_scores = rbind(DN_pca_pat_scores, DN_pca_pat)
+}
+DN_pca_pat_scores$patID = factor(DN_pca_pat_scores$patID, levels=DN_pat)
+
+heuristic_lines = data.frame(patID=DN_pat,MLN =mln_lines, RP = rp_lines, thres = thres_lines)
+heuristic_lines$patID = factor(heuristic_lines$patID, levels=DN_pat)
+
+DN_seeding_lesion_identification_plot <- ggplot(data=DN_pca_pat_scores, aes(x=PC1, y=PC2, color=sampletype, label=sampleID))+
+  geom_point(aes(shape=cohort), size=2)+
+  geom_text(hjust = 1, vjust = 1)+
+  labs(x="Principal Component 1", y="Principal Component 2")+
+  theme_bw()+
+  geom_vline(data = heuristic_lines, aes(xintercept = MLN), linetype = "dashed", color = "red")+
+  geom_vline(data = heuristic_lines, aes(xintercept = RP), linetype = "dashed", color = "blue")+
+  geom_vline(data = heuristic_lines, aes(xintercept = thres), linetype = "dashed", color = "purple")+
+  xlim(c(-0.9, 0.9))+
+  facet_wrap(~patID, ncol = 2)
+
+# ggsave(paste0(PATH_FIG_SEEDING_IDENTIFICATION, "DN_seeding_lesion_identification_plot", ".svg"), plot=DN_seeding_lesion_identification_plot, width = 10, height = 10)
+
+# Create data frame for the scatter plot
+df <- DN_pca_pat_scores
+patients <- DN_pat
+
+# Add Gleason score labels
+df_GS <- read.table(paste0(PATH_DATA, "de_novo_clinical_info_FFPE.csv"), sep = ",", header = T)
+df_GS <- subset(df_GS, SampleID %in% rownames(df))
+rownames(df_GS) <- df_GS$SampleID
+df_GS <- df_GS[rownames(df), ]
+df$GS <- factor(df_GS$GS)
+df$aggressive <- rownames(df) %in% DN_tGNS
+df <- df %>%
+  mutate(aggressive = ifelse(aggressive == TRUE, "tNGS agg", aggressive))
+# write.csv(df, paste0(PATH_FIGSHARE, "Figure2B_Data", ".csv"))
+
+# Create individual plots for each patient
+plots <- lapply(patients, function(i) {
+  create_patient_plot(i, DN_tGNS, is_last_plot = i == rev(patients)[1])
+})
+
+# Combine the individual plots into one grid (stacked vertically)
+combined_plot <- wrap_plots(plots, ncol = 1)
+
+sample_counts <- df %>%
+  filter(patID %in% patients) %>%
+  count(patID)
+
+plot_heights <- sample_counts$n / dim(df)[1] *1.5  # Normalized to sum to 1
+
+# Adjust the size of the combined plot
+combined_plot <- combined_plot + plot_layout(guides = "collect", heights = plot_heights, widths = 2)  # Stack and combine guides (legends)
+# ggsave(paste0(PATH_FIG_SEEDING_IDENTIFICATION, "Figure2B_combined_patient_plots_DN.svg"), combined_plot, height = 5, width = 5, dpi = 300)
+```
+
+# Seeding vs. non-seeding de novo metastatic cancer
+```{r}
+DN_MS <-  c("M1RP_ID8_RP7", "M1RP_ID23_RP4", "M1RP_ID26_RP3", "M1RP_ID33_RP6")
+DN_LNS = c("M1RP_ID8_RP1", "M1RP_ID23_RP9", "M1RP_ID26_RP1", "M1RP_ID33_RP5")
+DN_NS = c("M1RP_ID8_RP1", "M1RP_ID8_RP8", "M1RP_ID8_RP4", "M1RP_ID23_RP9",
+          "M1RP_ID26_RP1", "M1RP_ID33_RP5", "M1RP_ID33_RP9")
+
+DN_info <- data.frame(sampleID = union(DN_MS, DN_LNS))
+DN_info$samplestatus <- ifelse(DN_info$sampleID %in% DN_MS, "S", "NS")
+rownames(DN_info) <- DN_info$sampleID
+DN_info$patID <-  sapply(rownames(DN_info), function(x) str_split(x, "_")[[1]][2])
+
+DN_MS_LNS = DN_counts[,c(DN_info$sampleID)]
+# DN_MS_LNS_dds <- DESeqDataSetFromMatrix(countData=DN_MS_LNS,
+#                                         colData=DN_info,
+#                                         design=~samplestatus)
+# keep <- filterByExpr(DN_MS_LNS_dds, group = DN_info$samplestatus)
+# DN_MS_LNS_dds <- DN_MS_LNS_dds[keep,]
+# DN_MS_LNS_dds <- DESeq(DN_MS_LNS_dds)
+# 
+# DN_MS_LNS_res <- results(DN_MS_LNS_dds, contrast=c("samplestatus","S","NS"))
+# DN_MS_LNS_res <- na.omit(DN_MS_LNS_res)
+# # write.csv(DN_MS_LNS_res, paste0(PATH_DESEQ2, "DN_MS_LNS_res", ".csv"))
+# 
+# DN_MS_LNS_res_down <- DN_MS_LNS_res[(DN_MS_LNS_res$log2FoldChange <=-1)
+#                                     &(DN_MS_LNS_res$padj<0.05),]
+# DN_MS_LNS_res_up <- DN_MS_LNS_res[(DN_MS_LNS_res$log2FoldChange >= 1)
+#                                   &(DN_MS_LNS_res$padj<0.05),]
+# print(dim(DN_MS_LNS_res_down))
+# print(dim(DN_MS_LNS_res_up))
+
+# Most vs. Least (DESeq2 - pairwise)
+DN_MS_LNS_P_dds <- DESeqDataSetFromMatrix(countData=DN_MS_LNS,
+                                          colData=DN_info,
+                                          design=~patID+samplestatus)
+keep <- filterByExpr(DN_MS_LNS_P_dds, group = DN_info$samplestatus)
+DN_MS_LNS_P_dds <- DN_MS_LNS_P_dds[keep,]
+DN_MS_LNS_P_dds <- DESeq(DN_MS_LNS_P_dds)
+
+DN_MS_LNS_P_res <- results(DN_MS_LNS_P_dds, contrast=c("samplestatus","S","NS"))
+DN_MS_LNS_P_res <- na.omit(DN_MS_LNS_P_res)
+# write.csv(DN_MS_LNS_P_res, paste0(PATH_DESEQ2, "SupplementaryTable10.2_DN_MS_LNS_P_res", ".csv"))
+
+DN_MS_LNS_P_res_down <- DN_MS_LNS_P_res[(DN_MS_LNS_P_res$log2FoldChange <=-1)
+                                        &(DN_MS_LNS_P_res$padj<0.05),]
+DN_MS_LNS_P_res_up <- DN_MS_LNS_P_res[(DN_MS_LNS_P_res$log2FoldChange >= 1)
+                                      &(DN_MS_LNS_P_res$padj<0.05),]
+print(dim(DN_MS_LNS_P_res_down))
+print(dim(DN_MS_LNS_P_res_up))
+
+# # Most vs. rest (DESEq2)
+# DN_info <- data.frame(sampleID=union(DN_MS, DN_NS))
+# DN_info$samplestatus <- ifelse(DN_info$sample %in% DN_MS, "S", "NS")
+# rownames(DN_info) <- DN_info$sampleID
+# DN_info$patID <-  sapply(rownames(DN_info), function(x) str_split(x, "_")[[1]][2])
+# 
+# DN_MS_NS = DN_counts[,c(DN_info$sampleID)]
+# 
+# DN_MS_NS_dds <- DESeqDataSetFromMatrix(countData=DN_MS_NS,
+#                                        colData=DN_info,
+#                                        design=~samplestatus)
+# keep <- filterByExpr(DN_MS_NS_dds, group = DN_info$samplestatu)
+# DN_MS_NS_dds <- DN_MS_NS_dds[keep,]
+# DN_MS_NS_dds <- DESeq(DN_MS_NS_dds)
+# 
+# DN_MS_NS_res <- results(DN_MS_NS_dds, contrast=c("samplestatus","S","NS"))
+# DN_MS_NS_res <- na.omit(DN_MS_NS_res)
+# 
+# DN_MS_NS_res_down <- DN_MS_NS_res[(DN_MS_NS_res$log2FoldChange <=-1)
+#                                   &(DN_MS_NS_res$padj<0.01),]
+# DN_MS_NS_res_up <- DN_MS_NS_res[(DN_MS_NS_res$log2FoldChange >= 1)
+#                                 &(DN_MS_NS_res$padj<0.01),]
+# print(dim(DN_MS_NS_res_down))
+# print(dim(DN_MS_NS_res_up))
+# 
+# # Most vs. rest (DESeq2 - pairwise)
+# DN_MS_NS_P_dds <- DESeqDataSetFromMatrix(countData=DN_MS_NS,
+#                                          colData=DN_info, 
+#                                          design=~patID+samplestatus)
+# keep <- filterByExpr(DN_MS_NS_P_dds, group = DN_info$samplestatu)
+# DN_MS_NS_P_dds <- DN_MS_NS_P_dds[keep,]
+# DN_MS_NS_P_dds <- DESeq(DN_MS_NS_P_dds)
+# 
+# DN_MS_NS_P_res <- results(DN_MS_NS_P_dds, contrast=c("samplestatus","S","NS"))
+# DN_MS_NS_P_res <- na.omit(DN_MS_NS_P_res)
+# 
+# DN_MS_NS_P_res_down <- DN_MS_NS_P_res[(DN_MS_NS_P_res$log2FoldChange <=-1)
+#                                       &(DN_MS_NS_P_res$padj<0.01),]
+# DN_MS_NS_P_res_up <- DN_MS_NS_P_res[(DN_MS_NS_P_res$log2FoldChange >= 1)
+#                                     &(DN_MS_NS_P_res$padj<0.01),]
+# print(dim(DN_MS_NS_P_res_down))
+# print(dim(DN_MS_NS_P_res_up))
+```
+
+# Seeding vs. non-seeding locally advanced metastatic cancer
+```{r}
+# Most vs. Least (DESeq2) 1 vs. 1
+LA_MS = c("HR_ID1_RP3", "HR_ID3_RP1", "HR_ID4_RP2", "HR_ID5_RP1", "HR_ID6_RP2", 
+       "HR_ID7_RP4", "HR_ID9_RP1", "HR_ID10_RP3", "HR_ID11_RP4", "HR_ID15_RP5",
+       "HR_ID17_RP6", "HR_ID18_RP5")
+LA_LNS = c("HR_ID1_RP5", "HR_ID3_RP3", "HR_ID4_RP5", "HR_ID5_RP3", "HR_ID6_RP5",
+        "HR_ID7_RP5", "HR_ID9_RP4", "HR_ID10_RP1", "HR_ID11_RP1", "HR_ID15_RP4",
+        "HR_ID17_RP4", "HR_ID18_RP4")
+LA_S = c("HR_ID1_RP3", "HR_ID1_RP4", "HR_ID3_RP1", "HR_ID4_RP2", 
+      "HR_ID5_RP1", "HR_ID5_RP2", "HR_ID6_RP2", "HR_ID6_RP4", 
+      "HR_ID7_RP4", "HR_ID7_RP3", "HR_ID9_RP1", "HR_ID9_RP5", "HR_ID9_RP2", 
+      "HR_ID10_RP3",  "HR_ID11_RP4", "HR_ID11_RP5", "HR_ID11_RP2", 
+      "HR_ID15_RP5", "HR_ID17_RP6", "HR_ID17_RP1", "HR_ID18_RP5")
+LA_NS = c("HR_ID1_RP5", "HR_ID1_RP1", "HR_ID1_RP2", 
+       "HR_ID3_RP3", "HR_ID3_RP4", "HR_ID3_RP2", "HR_ID3_RP5",
+       "HR_ID4_RP5", "HR_ID4_RP1", "HR_ID4_RP3", "HR_ID4_RP4",
+       "HR_ID5_RP3", "HR_ID5_RP4", "HR_ID6_RP5", "HR_ID6_RP1", "HR_ID6_RP3", 
+       "HR_ID7_RP5", "HR_ID7_RP1", "HR_ID7_RP6", "HR_ID7_RP2", "HR_ID9_RP4", "HR_ID9_RP3",
+       "HR_ID10_RP1", "HR_ID10_RP2", "HR_ID10_RP6", "HR_ID10_RP5","HR_ID10_RP4",
+       "HR_ID11_RP1", "HR_ID11_RP3",
+       "HR_ID15_RP4", "HR_ID15_RP2", "HR_ID15_RP1", "HR_ID15_RP3", 
+       "HR_ID17_RP4", "HR_ID17_RP5", "HR_ID17_RP3", "HR_ID17_RP2",
+       "HR_ID18_RP4", "HR_ID18_RP3", "HR_ID18_RP1", "HR_ID18_RP2")
+
+LA_info <- data.frame(sampleID = union(LA_MS, LA_LNS))
+LA_info$samplestatus <- ifelse(LA_info$sampleID %in% LA_MS, "S", "NS")
+rownames(LA_info) <- LA_info$sampleID
+LA_info$patID <-sapply(rownames(LA_info), function(x) str_split(x, "_")[[1]][2])
+LA_subset = LA_counts[,c(LA_info$sampleID)]
+
+# LA_MS_LNS_dds <- DESeqDataSetFromMatrix(countData=LA_subset,
+#                                         colData=LA_info, 
+#                                         design=~samplestatus)
+# keep <- filterByExpr(LA_MS_LNS_dds, group=LA_info$samplestatus)
+# LA_MS_LNS_dds <- LA_MS_LNS_dds[keep,]
+# LA_MS_LNS_dds <- DESeq(LA_MS_LNS_dds)
+# 
+# LA_MS_LNS_res <- results(LA_MS_LNS_dds, contrast=c("samplestatus","S","NS"))
+# LA_MS_LNS_res <- na.omit(LA_MS_LNS_res)
+# write.csv(LA_MS_LNS_res, paste0(PATH_DESEQ2, "LA_MS_LNS_res", ".csv"))
+
+# LA_MS_LNS_res_down <- LA_MS_LNS_res[(LA_MS_LNS_res$log2FoldChange <=-1)
+#                                     &(LA_MS_LNS_res$padj<0.01),]
+# LA_MS_LNS_res_up <- LA_MS_LNS_res[(LA_MS_LNS_res$log2FoldChange >= 1)
+#                                   &(LA_MS_LNS_res$padj<0.01),]
+# print(dim(LA_MS_LNS_res_down))
+# print(dim(LA_MS_LNS_res_up))
+
+# Most vs. Least (DESeq2 - pairwise)
+LA_MS_LNS_P_dds <- DESeqDataSetFromMatrix(countData=LA_subset,
+                                        colData=LA_info, 
+                                        design=~patID+samplestatus)
+keep <- filterByExpr(LA_MS_LNS_P_dds, group=LA_info$samplestatus)
+LA_MS_LNS_P_dds <- LA_MS_LNS_P_dds[keep,]
+LA_MS_LNS_P_dds <- DESeq(LA_MS_LNS_P_dds)
+
+LA_MS_LNS_P_res <- results(LA_MS_LNS_P_dds, contrast=c("samplestatus","S","NS"))
+LA_MS_LNS_P_res <- na.omit(LA_MS_LNS_P_res)
+# write.csv(LA_MS_LNS_P_res, paste0(PATH_DESEQ2, "SupplementaryTable10.1_LA_MS_LNS_P_res", ".csv"))
+
+LA_MS_LNS_P_res_down <- LA_MS_LNS_P_res[(LA_MS_LNS_P_res$log2FoldChange <=-1)
+                                    &(LA_MS_LNS_P_res$padj<0.01),]
+LA_MS_LNS_P_res_up <- LA_MS_LNS_P_res[(LA_MS_LNS_P_res$log2FoldChange >= 1)
+                                  &(LA_MS_LNS_P_res$padj<0.01),]
+print(dim(LA_MS_LNS_P_res_down))
+print(dim(LA_MS_LNS_P_res_up))
+
+# # Most vs. rest (DESEq2)
+# LA_info <- data.frame(sampleID = union(LA_S, LA_NS))
+# LA_info$samplestatus <- ifelse(LA_info$sampleID %in% LA_S, "S", "NS")
+# rownames(LA_info) <- LA_info$sampleID
+# LA_info$patID <-sapply(rownames(LA_info), function(x) str_split(x, "_")[[1]][2])
+# LA_subset = LA_counts[,c(LA_info$sampleID)]
+# 
+# LA_S_NS_dds <- DESeqDataSetFromMatrix(countData=LA_subset,
+#                                         colData=LA_info, 
+#                                         design=~samplestatus)
+# keep <- filterByExpr(LA_S_NS_dds, group=LA_info$samplestatus)
+# LA_S_NS_dds <- LA_S_NS_dds[keep,]
+# LA_S_NS_dds <- DESeq(LA_S_NS_dds)
+# 
+# LA_S_NS_res <- results(LA_S_NS_dds, contrast=c("samplestatus","S","NS"))
+# LA_S_NS_res <- na.omit(LA_S_NS_res)
+# LA_S_NS_res_down <- LA_S_NS_res[(LA_S_NS_res$log2FoldChange <=-1)
+#                                     &(LA_S_NS_res$padj<0.01),]
+# LA_S_NS_res_up <- LA_S_NS_res[(LA_S_NS_res$log2FoldChange >= 1)
+#                                   &(LA_S_NS_res$padj<0.01),]
+# print(dim(LA_S_NS_res_down))
+# print(dim(LA_S_NS_res_up))
+# 
+# LA_S_NS_P_dds <- DESeqDataSetFromMatrix(countData=LA_subset,
+#                                         colData=LA_info, 
+#                                         design=~patID+samplestatus)
+# keep <- filterByExpr(LA_S_NS_P_dds, group=LA_info$samplestatus)
+# LA_S_NS_P_dds <- LA_S_NS_P_dds[keep,]
+# LA_S_NS_P_dds <- DESeq(LA_S_NS_P_dds)
+# 
+# LA_S_NS_P_res <- results(LA_S_NS_P_dds, contrast=c("samplestatus","S","NS"))
+# LA_S_NS_P_res <- na.omit(LA_S_NS_P_res)
+# LA_S_NS_P_res_down <- LA_S_NS_P_res[(LA_S_NS_P_res$log2FoldChange <=-1)
+#                                     &(LA_S_NS_P_res$padj<0.01),]
+# LA_S_NS_P_res_up <- LA_S_NS_P_res[(LA_S_NS_P_res$log2FoldChange >= 1)
+#                                   &(LA_S_NS_P_res$padj<0.01),]
+# print(dim(LA_S_NS_P_res_down))
+# print(dim(LA_S_NS_P_res_up))
+```
+
+```{r}
+LA_down = LA_MS_LNS_P_res[(LA_MS_LNS_P_res$log2FoldChange<=-1)&(LA_MS_LNS_P_res$padj<0.05),]
+LA_up = LA_MS_LNS_P_res[(LA_MS_LNS_P_res$log2FoldChange>=1)&(LA_MS_LNS_P_res$padj<0.05),]
+
+DN_down = DN_MS_LNS_P_res[(DN_MS_LNS_P_res$log2FoldChange<=-1)&(DN_MS_LNS_P_res$padj<0.05),]
+DN_up = DN_MS_LNS_P_res[(DN_MS_LNS_P_res$log2FoldChange>=1)&(DN_MS_LNS_P_res$padj<0.05),]
+
+common_down = intersect(rownames(LA_down), rownames(DN_down))
+common_up = intersect(rownames(LA_up), rownames(DN_up))
+
+print(length(common_down))
+print(common_down)
+print(length(common_up))
+print(common_up)
+
+LA_down_strict = LA_MS_LNS_P_res[(LA_MS_LNS_P_res$log2FoldChange<=-2)&(LA_MS_LNS_P_res$padj<0.001),]
+LA_up_strict = LA_MS_LNS_P_res[(LA_MS_LNS_P_res$log2FoldChange>=2)&(LA_MS_LNS_P_res$padj<0.001),]
+
+print(length(setdiff(rownames(LA_down_strict), common_down)))
+print(length(setdiff(rownames(LA_up_strict), common_up)))
+
+DN_down_strict = DN_MS_LNS_P_res[(DN_MS_LNS_P_res$log2FoldChange<=-2)&(DN_MS_LNS_P_res$padj<0.001),]
+DN_up_strict = DN_MS_LNS_P_res[(DN_MS_LNS_P_res$log2FoldChange>=2)&(DN_MS_LNS_P_res$padj<0.001),]
+
+print(length(setdiff(rownames(DN_down_strict), common_down)))
+print(length(setdiff(rownames(DN_up_strict), common_up)))
+
+strict_down = union(rownames(LA_down_strict), rownames(DN_down_strict)) 
+strict_up = union(rownames(LA_up_strict), rownames(DN_up_strict)) 
+
+print(length(strict_down))
+print(length(strict_up))
+
+signature_down = union(common_down, strict_down)
+signature_up = union(common_up, strict_up)
+length(signature_down)
+length(signature_up)
+signature = union(signature_down, signature_up)
+length(signature)
+
+aggressive_signature_df <- data.frame(Genes = signature)
+# write.csv(aggressive_signature_df, paste0(PATH_SIGNATURE, "aggressive_signature", ".csv"), row.names = F)
+
+df <- data.frame(Gene = signature)
+df$DU <- ifelse(df$Gene %in% signature_down, "Down", "Up")
+df$DE_common <- ifelse(df$Gene %in% c(common_up, common_down), 1, 0)
+df$DE_LA <- ifelse(df$Gene %in% c(rownames(LA_up_strict), rownames(LA_down_strict)), 1, 0)
+df$DE_DN <- ifelse(df$Gene %in% c(rownames(DN_up_strict), rownames(DN_down_strict)), 1, 0)
+# write.csv(df, paste0(PATH_SIGNATURE, "aggressive_signature_DU", ".csv"), row.names = F)
+```
+
+
+```{r}
+# PCS1 = c("STMN1", "MCM4", "CCNB1", "CDC6", "CDKN3", "EZH2", "TPX2", 
+#          "FOXM1", "KIF11", "HMMR", "MKI67", "KNTC1")
+# 
+# intersect(signature, PCS1)
+length(intersect(signature, progression_signature))
+```
+
+# TCGA data processing
+```{r}
+# Expression
+tcga <- read.csv(paste0(PATH_DATA, "TCGA-PRAD.htseq_counts_nd.tsv.gz"), sep="\t", row.names = 1)
+dim(tcga)
+
+# RP vs. NL
+sample = read.csv(paste0(PATH_DATA, "clinical/biospecimen.project-TCGA-PRAD.2021-11-17/sample.tsv"), sep="\t")
+sample = sample[,c("sample_submitter_id", "sample_type")]
+sample = unique(sample$sample_submitter_id[sample$sample_type=="Primary Tumor"])
+sample = gsub("-", '.', sample)
+
+tcga = tcga[,colnames(tcga)[colnames(tcga) %in% sample]]
+write.csv(tcga, paste0(PATH_FIGSHARE, "tcga_counts_N1_N0", ".csv"))
+
+# LN status
+status = read.csv("/home/bioit/ldschaet/Desktop/TCGA_clinical.csv")
+status = status[, c('case_submitter_id', 'ajcc_pathologic_n')]
+colnames(status) = c("patID", "LNstatus")
+status = status[status$LNstatus!="'--",]
+status = distinct(status)
+
+# Progression free survival
+endpoint <- "PFI"
+clinical <- read.csv("/home/bioit/ldschaet/Downloads/RE__Scripts/updated_clinical_endpoints.csv", row.names = 1)
+clinical <- clinical[c('bcr_patient_barcode', endpoint, paste0(endpoint,".time"))]
+colnames(clinical) <- c("patID", "endpoint", "endpoint.time")
+clinical = distinct(clinical)
+
+# Combine
+tcga_info = data.frame(colnames(tcga))
+colnames(tcga_info) <- "sampleID"
+tcga_info["patID"]<- substr(tcga_info$sampleID, 1, nchar(tcga_info$sampleID) - 4)
+tcga_info$patID <- gsub("\\.", "-", tcga_info$patID)
+
+status = status[status$patID %in% tcga_info$patID,]
+clinical = clinical[clinical$patID %in% tcga_info$patID,]
+
+tcga_info <- left_join(tcga_info, status, by = "patID")
+tcga_info <- left_join(tcga_info, clinical, by = "patID")
+tcga_info$LNstatus[is.na(tcga_info$LNstatus)] <- "NA"
+
+tcga_info$endpoint <- as.numeric(tcga_info$endpoint)
+tcga_info$endpoint.time <- as.numeric(tcga_info$endpoint.time)
+
+write.csv(tcga_info, paste0(PATH_FIGSHARE, "tcga_RP_info", ".csv"))
+
+keep <- filterByExpr(tcga, min.prop = 0.1)
+tcga <- tcga[keep,]
+tcga <- tcga[apply(tcga, 1, var) >= 0.1,]
+tcga <- log2(tcga + 1)
+tcga <- as.data.frame(scale(tcga, center = colMeans(tcga), scale =  apply(tcga, 2, sd)))
+```
+
+# KM curves based on N1 and N0 status in TCGA
+```{r}
+# Keep only those for which the LN status is known
+data_info <- tcga_info[tcga_info$LNstatus!="NA",]
+# write.csv(info, paste0(PATH_FIGSHARE, "SupplementaryFigure76_Data", ".csv"), row.names = FALSE)
+
+fit <- survfit(Surv(endpoint.time, endpoint) ~ LNstatus, data=info)
+clusters <- levels(as.factor(info$LNstatus))
+N1_pval <- surv_pvalue(fit)$pval
+color <- c("#FF0000", "#FFA500")
+
+# Kaplan Meier
+ggsurv <- ggsurvplot(fit, data = data_info, size = 1, ylab = "Survival fraction", xlab = "Time to progression (years)", 
+                     palette = color, conf.int = FALSE, pval = paste(c("Log-rank p-value = ", signif(pval, digits=3)), collapse = ""), 
+                     legend = c(0.9,0.9), legend.labs = clusters, legend.title = "Cluster",
+                     censor.shape="|",
+                     risk.table = "nrisk_cumcensor",
+                     risk.table.title = "Number at risk (number censored)", 
+                     risk.table.col = "black", 
+                     risk.table.height = 0.20,
+                     risk.table.y.text.col = T,
+                     risk.table.y.text = F,
+                     ggtheme = theme_survminer() + 
+                       theme(axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15), 
+                             legend.text = element_text(size = 15), legend.title = element_text(size = 15)), 
+                     tables.theme = theme_survminer() + 
+                       theme(axis.line = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank())
+                 )
+
+pdf(paste0(PATH_FIG_SURVIVAL, "TCGA_SC_N1_N0", ".pdf"), width = 6, height = 5)
+print(ggsurv, newpage = FALSE)
+dev.off()
+
+# Hazard ratio
+data_info$aggressive <- ifelse(data_info$LNstatus == 'N1', 1, 0)
+cox <- coxph(Surv(endpoint.time, endpoint) ~ aggressive, data = data_info)
+N1_hazard_ratio <- exp(cox$coefficients)
+N1_conf_interval <- exp(confint(cox, level = 0.95))
+```
+
+# KM with signature 
+```{r}
+# 1. Cluster TCGA RP samples based on expression of genes in signature
+signature_TCGA <- intersect(signature, rownames(tcga))
+expr_df = tcga[signature_TCGA, tcga_info$sampleID]
+annot_df = data.frame(tcga_info$LNstatus)
+colnames(annot_df) <- 'LNstatus'
+rownames(annot_df) <- tcga_info$sampleID
+
+colours <- list('LNstatus' = c('N1' = '#FF0000', 'N0' = '#0000FF', 'NA' =  '#FFFFFF'))
+colAnn <- HeatmapAnnotation(df = annot_df,
+                            which = 'col',
+                            col = colours,
+                            annotation_width = unit(c(1, 4), 'cm'),
+                            gap = unit(1, 'mm'))
+
+hmap <- Heatmap(expr_df,  show_column_names = FALSE, show_row_names = FALSE, 
+                top_annotation=colAnn, cluster_columns = TRUE, cluster_rows = FALSE, column_km = 2)
+
+# pdf(paste0(PATH_FIG_HEATMAPS, "TCGA_clusters_signature", ".pdf"), width = 8, height = 8)
+draw(hmap, heatmap_legend_side="left", annotation_legend_side="right")
+dev.off()
+
+column_order <- column_order(hmap)
+sampleIDs <- colnames(expr_df)
+cluster1 <- sampleIDs[column_order$`1`]
+cluster2 <- sampleIDs[column_order$`2`]
+
+cluster1_N1 <- cluster1[cluster1 %in% rownames(annot_df)[annot_df$LNstatus=="N1"]]
+cluster2_N1 <- cluster2[cluster2 %in% rownames(annot_df)[annot_df$LNstatus=="N1"]]
+
+ratio1 = length(cluster1_N1)/length(cluster1)
+ratio2 = length(cluster2_N1)/length(cluster2)
+
+if (ratio1>ratio2){
+  print(fisher.test(matrix(c(length(cluster1_N1), length(cluster1)-length(length(cluster1_N1)),
+                             length(cluster2_N1), length(cluster2)-length(cluster2_N1)), nrow=2), 
+                    alternative="greater"))
+  print("cluster1 contains a higher number of N1 sample")
+} else {
+  print(fisher.test(matrix(c(length(cluster2_N1), length(cluster2)-length(cluster2_N1),
+                             length(cluster1_N1), length(cluster1)-length(cluster1_N1)), nrow=2), 
+                    alternative="greater"))
+  print("cluster2 contains a higher number of N1 sample")
+}
+
+tcga_info$cluster <- ifelse(tcga_info$sampleID %in% cluster1, "C1", "C2")
+
+# 2. KM
+info <- tcga_info
+fit <- survfit(Surv(endpoint.time, endpoint) ~ cluster, data=info)
+clusters <- levels(as.factor(info$cluster))
+pval <- surv_pvalue(fit)$pval
+
+ggsurv <- ggsurvplot(fit, data = info, size = 1, ylab = "PFI", palette = c("#E7B800", "#2E9FDF"), 
+                     conf.int = TRUE, pval = TRUE, risk.table = TRUE, 
+                     risk.table.col = "strata",censor.shape="|", legend.labs = c(clusters),  
+                     risk.table.height = 0.25, ggtheme = theme_bw())
+
+# pdf(paste0(PATH_FIG_SURVIVAL, "TCGA_SC_clusters_signature", ".pdf"), width = 6, height = 5)
+print(ggsurv, newpage = FALSE)
+dev.off()
+```
+
+# With a random signature
+```{r}
+set.seed(5)
+random_genes <- sample(rownames(tcga), length(signature_TCGA))
+expr_df = tcga[random_genes, tcga_info$sampleID]
+annot_df = data.frame(tcga_info$LNstatus)
+colnames(annot_df) <- 'LNstatus'
+rownames(annot_df) <- tcga_info$sampleID
+
+colours <- list('LNstatus' = c('N1' = '#FF0000', 'N0' = '#0000FF', 'NA' =  '#FFFFFF'))
+colAnn <- HeatmapAnnotation(df = annot_df,
+                            which = 'col',
+                            col = colours,
+                            annotation_width = unit(c(1, 4), 'cm'),
+                            gap = unit(1, 'mm'))
+
+hmap <- Heatmap(expr_df,  show_column_names = FALSE, show_row_names = FALSE, 
+                top_annotation=colAnn, cluster_columns = TRUE, cluster_rows = FALSE, column_km = 2)
+
+# pdf(paste0(PATH_FIG_HEATMAPS, "TCGA_clusters_random_signature", ".pdf"), width = 8, height = 8)
+draw(hmap, heatmap_legend_side="left", annotation_legend_side="right")
+dev.off()
+
+column_order <- column_order(hmap)
+sampleIDs <- colnames(expr_df)
+cluster1 <- sampleIDs[column_order$`1`]
+cluster2 <- sampleIDs[column_order$`2`]
+
+cluster1_N1 <- cluster1[cluster1 %in% rownames(annot_df)[annot_df$LNstatus=="N1"]]
+cluster2_N1 <- cluster2[cluster2 %in% rownames(annot_df)[annot_df$LNstatus=="N1"]]
+
+ratio1 = length(cluster1_N1)/length(cluster1)
+ratio2 = length(cluster2_N1)/length(cluster2)
+
+if (ratio1>ratio2){
+  print(fisher.test(matrix(c(length(cluster1_N1), length(cluster1)-length(length(cluster1_N1)),
+                             length(cluster2_N1), length(cluster2)-length(cluster2_N1)), nrow=2), 
+                    alternative="greater"))
+  print("cluster1 contains a higher number of N1 sample")
+} else {
+  print(fisher.test(matrix(c(length(cluster2_N1), length(cluster2)-length(cluster2_N1),
+                             length(cluster1_N1), length(cluster1)-length(cluster1_N1)), nrow=2), 
+                    alternative="greater"))
+  print("cluster2 contains a higher number of N1 sample")
+}
+
+tcga_info$cluster <- ifelse(tcga_info$sampleID %in% cluster1, "C1", "C2")
+
+# 2. KM
+info <- tcga_info
+fit <- survfit(Surv(endpoint.time, endpoint) ~ cluster, data=info)
+clusters <- levels(as.factor(info$cluster))
+pval <- surv_pvalue(fit)$pval
+
+ggsurv <- ggsurvplot(fit, data = info, size = 1, ylab = "PFI", palette = c("#E7B800", "#2E9FDF"), 
+                     conf.int = TRUE, pval = TRUE, risk.table = TRUE, 
+                     risk.table.col = "strata",censor.shape="|", legend.labs = c(clusters),  
+                     risk.table.height = 0.25, ggtheme = theme_bw())
+
+# pdf(paste0(PATH_FIG_SURVIVAL, "TCGA_SC_clusters_random_signature", ".pdf"), width = 6, height = 5)
+print(ggsurv, newpage = FALSE)
+dev.off()
+```
+
+# Pathway preprocessing
+```{r}
+LA_res <- LA_MS_LNS_P_res
+LA_res$SYMBOL <- rownames(LA_res)
+LA_res <- na.omit(LA_res)
+LA_res <- LA_res[,c("SYMBOL", "stat")]
+row.names(LA_res) <- NULL
+LA_ranks <- deframe(LA_res)
+
+DN_res <- DN_MS_LNS_P_res
+DN_res$SYMBOL <- rownames(DN_res)
+DN_res <- na.omit(DN_res)
+DN_res <- DN_res[,c("SYMBOL", "stat")]
+row.names(DN_res) <- NULL
+DN_ranks <- deframe(DN_res)
+```
+
+# GSEA 
+```{r}
+# Hallmarks 
+set.seed(1)
+pathways.hallmark <- gmtPathways(paste0(PATH_DATA, "h.all.v2023.2.Hs.symbols.gmt"))
+
+# LA 
+LA_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=LA_ranks, nperm=1000)
+LA_fgsea_res <- LA_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+LA_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+LA_fgsea_res <- data.frame(LA_fgsea_res)
+
+check_overlap <- function(leading_genes, signature_genes) {
+  return(intersect(leading_genes, signature_genes))
+}
+
+LA_fgsea_res$overlap <- sapply(LA_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+LA_fgsea_res$leadingEdge <- sapply(LA_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+LA_fgsea_res$overlap <- sapply(LA_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+LA_fgsea_res <- LA_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+
+LA_gsea <- ggplot(LA_fgsea_res, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+# ggsave(paste0(PATH_FIG_GSEA, "LA_gsea", ".svg"), plot=LA_gsea , width = 8, height = 10)
+# write.table(LA_fgsea_res, paste0(PATH_GSEA, "SupplementaryTable10.3_LA_fgsea_res", ".csv"), sep=",", row.names = F)
+
+# DN 
+DN_fgsea_res<- fgsea(pathways=pathways.hallmark, stats=DN_ranks, nperm=1000)
+DN_fgsea_res <- DN_fgsea_res %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+DN_fgsea_res %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) 
+
+DN_fgsea_res <- data.frame(DN_fgsea_res)
+
+DN_fgsea_res$overlap <- sapply(DN_fgsea_res$leadingEdge, check_overlap,  signature_genes=signature)
+DN_fgsea_res$leadingEdge <- sapply(DN_fgsea_res$leadingEdge, function(x) paste(x, collapse = ","))
+DN_fgsea_res$overlap <- sapply(DN_fgsea_res$overlap, function(x) paste(x, collapse = ","))
+DN_fgsea_res <- DN_fgsea_res[,c("pathway", "padj", "ES","NES","size","leadingEdge","overlap")]
+
+DN_gsea <- ggplot(DN_fgsea_res, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score") + 
+  theme_minimal()
+# ggsave(paste0(PATH_FIG_GSEA, "DN_gsea", ".svg"), plot=DN_gsea , width = 8, height = 10)
+# write.table(DN_fgsea_res, paste0(PATH_GSEA, "SupplementaryTable10.4_DN_fgsea_res", ".csv"), sep=",", row.names = F)
+```
+
+# Calculate the overlap
+```{r}
+LA_path_sign = LA_fgsea_res[LA_fgsea_res$padj<0.05,]
+DN_path_sign = DN_fgsea_res[DN_fgsea_res$padj<0.05,]
+
+dim(LA_path_sign)
+dim(DN_path_sign)
+
+LA_path_sign_up = LA_path_sign$pathway[LA_path_sign$NES>0]
+DN_path_sign_up = DN_path_sign$pathway[DN_path_sign$NES>0]
+
+LA_path_sign_down= LA_path_sign$pathway[LA_path_sign$NES<0]
+DN_path_sign_down= DN_path_sign$pathway[DN_path_sign$NES<0]
+
+intersect(LA_path_sign_up,DN_path_sign_up)
+intersect(LA_path_sign_down,DN_path_sign_down)
+```
