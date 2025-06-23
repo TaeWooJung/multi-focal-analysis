@@ -30,3 +30,49 @@ Louise de Schaetzen van Brienen, Taewoo Jung, et al.
 ├── FigShare/              # Key figures and tables
 ├── SupplementaryTables/   # Key tables
 └── README.md              # This file
+```
+--
+
+## 📦 Setup Instructions
+1. Clone the Repository
+```bash
+git clone https://github.com/TaeWooJung/multi-focal-analysis.git
+cd multi-focal-analysis
+```
+2. Prerequisites
+- conda
+- R
+
+## 🛠️ Run Analysis
+To reproduce the full pipeline:
+
+### Seeding lesion identification
+```bash
+Scripts/1_tNGS_variant_call_analysis.ipynb    # tNGS analysis
+Scripts/1_bulk_seq_analysis.Rmd
+```
+
+### Aggressive cell identification and downstream analysis
+```bash
+Scripts/2_sc_analysis_luminal.Rmd            # Luminal cells
+Scripts/3_sc_analysis_fibroblast.Rmd         # Fibroblast
+Scripts/4_sc_analysis_endothelial.Rmd        # Endothelial cells
+Scripts/5_sc_analysis_plots.Rmd              # Generating heatmaps
+```
+
+### Survival analysis on TCGA-PRAD
+```bash
+Scripts/6_survival_analysis.Rmd
+```
+
+## 🧪 Data Access
+### Raw Data
+Available on GEO: GSEXXXXXX
+
+### Processed Data
+Processed count matrices, normalized expression (TPM), and metadata are available in at [Zenodo/OSF/figshare link].
+
+
+
+
+
