@@ -19,19 +19,6 @@ Louise de Schaetzen van Brienen, Taewoo Jung, et al.
 
 ---
 
-## 📁 Repository Contents
-
-```bash
-.
-├── Data/                  # Processed data or links to raw datasets
-├── Scripts/               # RNA-seq and single-cell analysis scripts (preprocessing, DEGs, clustering)
-├── Results/               # Key figures and tables
-├── Figures/               # Key files to generate figures in the paper
-├── FigShare/              # Key figures and tables
-├── SupplementaryTables/   # Key tables
-└── README.md              # This file
-```
-
 
 ## 📦 Setup Instructions
 1. Clone the Repository
@@ -64,7 +51,10 @@ Scripts/1_bulk_seq_analysis.Rmd
 # Preprocessing raw data from single cell dataset from Chen et al. (2021)
 Scripts/single_cell_preprocessing/0_chenRawData.R
 # Run inferCNV to classify malignant cells
+# Note: malignantAnnot.tsv was used to create Data/cell_annotation.csv
 Scripts/single_cell_preprocessing/1_inferCNV_analysis.R
+# Perform clustering on luminal cells, fibroblast and endothelial cells
+Scripts/single_cell_preprocessing/2_subclustering_analysis.R
 ```
 
 ### Aggressive cell identification and downstream analysis
@@ -86,6 +76,7 @@ Scripts/6_survival_analysis.Rmd
 RNA-seq and tNGS datasets from Multi-focal cohorts are available on European Genome-Phenome Archive (EGA):
 - EGAS00001006466 [[2]](#ref2)
 - EGAS00001006715 [[3]](#ref3)
+
 TCGA-PRAD dataset from National Cancer Institute and GDC Data Portal:
 - Bulk RNA-seq [[4]](#ref4)
 - Genome annotation [[5]](#ref5)
