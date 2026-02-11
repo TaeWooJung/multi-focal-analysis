@@ -1,5 +1,6 @@
-# macOS system files
+# System files
 .DS_Store
+.Rhistory
 
 # Python cache files
 __pycache__/

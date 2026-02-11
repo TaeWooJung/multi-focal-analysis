@@ -1,0 +1,171 @@
+---
+title: "1. Bulk sequencing analysis"
+output: html_document
+date: "2025-05-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load global configuration
+```{r}
+source("/Users/taewoojung/Documents/PhD/Papers/GenomeMedicine/scripts/global_config.R")
+library(SummarizedExperiment)
+library(BatchQC)
+```
+
+# MLN-RP comparison in the de novo prostate cancer cohort
+```{r}
+DN_counts <- read.table(paste0(PATH_DATA, "de_novo_counts_47.csv"), header=T, row.name=1, sep=",")
+DN_counts <- subset(DN_counts, select = -M1RP_ID23_RP4)
+colnames(DN_counts) <- ifelse(colnames(DN_counts) != "M1RP_ID23_RP44",
+                              colnames(DN_counts), "M1RP_ID23_RP4") 
+# write.csv(DN_counts, paste0(PATH_FIGSHARE, "de_novo_cohort_counts", ".csv"))
+
+
+#one sample was re-sequenced because of bad quality 
+DN_info <- data.frame(sapply(colnames(DN_counts), 
+                             function(x) str_extract(str_split(x, "_")[[1]][3],
+                                                     "[^0-9]+")))
+colnames(DN_info) <- c("sampletype")
+DN_info$patID <- sapply(colnames(DN_counts), 
+                           function(x) str_split(x, "_")[[1]][2])
+DN_batch_info <- read.table(paste0(PATH_DATA, "de_novo_batch_info.csv"), header=T, row.name=1, sep=",")
+DN_info$batch <- DN_batch_info[rownames(DN_info), "batch"]
+
+# MLN vs. RP
+metadata <- DN_info
+metadata$patID <- factor(metadata$patID)
+metadata$sampletype <- factor(metadata$sampletype)
+metadata$batch <- factor(metadata$batch)
+counts <- DN_counts[, rownames(metadata)]
+keep <- filterByExpr(counts, group = metadata$sampletype)
+counts <- counts[keep,]
+dds <- DESeqDataSetFromMatrix(counts, design = ~patID+sampletype, colData=metadata)
+dds <- DESeq(dds)
+res_wo_batch <- results(dds)[!is.na(results(dds)$padj), ]
+
+dds_batch <- DESeqDataSetFromMatrix(counts, design = ~patID+batch+sampletype, colData=metadata)
+dds_batch <- DESeq(dds_batch)
+res_batch <- results(dds_batch)[!is.na(results(dds_batch)$padj), ]
+
+# Reduced model excludes batch
+dds_lrt <- DESeq(dds_batch, test="LRT", reduced = ~patID+sampletype)
+# Get results
+res <- results(dds_lrt)
+res_clean <- res[!is.na(res$padj), ]
+# Get gene names with padj < 0.05
+sig_genes <- rownames(res_clean)[res_clean$padj < 0.05]
+# View the gene names
+length(sig_genes)
+```
+
+```{r}
+lfc_sig_wo_batch <- abs(res_wo_batch$log2FoldChange) > 1.5
+print(intersect(rownames(res_wo_batch[lfc_sig_wo_batch & res_wo_batch$padj < 0.05, ]), sig_genes))
+lfc_sig_batch <- abs(res_batch$log2FoldChange) > 1.5
+print(intersect(rownames(res_batch[lfc_sig_batch & res_batch$padj < 0.05, ]), sig_genes))
+```
+
+
+```{r}
+# MLN vs. RP
+LA_MLN_RP_res <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable3.2_LA_MLN_RP_res", ".csv"), row.names = 1)
+select_down <- which((LA_MLN_RP_res$padj < .05)&(LA_MLN_RP_res$log2FoldChange<=-1.5))
+select_up <- which((LA_MLN_RP_res$padj < .05)&(LA_MLN_RP_res$log2FoldChange>=1.5))
+LA_MLN_RP_down = LA_MLN_RP_res[select_down, ]
+LA_MLN_RP_up = LA_MLN_RP_res[select_up, ]
+print(dim(LA_MLN_RP_down))
+print(dim(LA_MLN_RP_up))
+
+DN_MLN_RP_res <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable4.2_DN_MLN_RP_res", ".csv"), row.names = 1)
+select_down <- which((DN_MLN_RP_res$padj < .05)&(DN_MLN_RP_res$log2FoldChange<=-1.5))
+select_up <- which((DN_MLN_RP_res$padj < .05)&(DN_MLN_RP_res$log2FoldChange>=1.5))
+DN_MLN_RP_down = DN_MLN_RP_res[select_down, ]
+DN_MLN_RP_up = DN_MLN_RP_res[select_up, ]
+print(dim(DN_MLN_RP_down))
+print(dim(DN_MLN_RP_up))
+
+LA_RP_NL_res <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable3.1_LA_RP_NL_res", ".csv"), row.names = 1)
+select_down <- which((LA_RP_NL_res$padj < .05)&(LA_RP_NL_res$log2FoldChange<=-1.5))
+select_up <- which((LA_RP_NL_res$padj < .05)&(LA_RP_NL_res$log2FoldChange>=1.5))
+LA_RP_NL_down = LA_RP_NL_res[select_down, ]
+LA_RP_NL_up = LA_RP_NL_res[select_up, ]
+print(dim(LA_RP_NL_down))
+print(dim(LA_RP_NL_up))
+
+TCGA_RP_NL_res <- read.csv(paste0(PATH_DESEQ2, "SupplementaryTable4.1_TCGA_RP_NL_res", ".csv"), row.names = 1)
+select_down <- which((TCGA_RP_NL_res$padj < .05)&(TCGA_RP_NL_res$log2FoldChange<=-1.5))
+select_up <- which((TCGA_RP_NL_res$padj < .05)&(TCGA_RP_NL_res$log2FoldChange>=1.5))
+TCGA_RP_NL_down = TCGA_RP_NL_res[select_down, ]
+TCGA_RP_NL_up = TCGA_RP_NL_res[select_up, ]
+print(dim(TCGA_RP_NL_down))
+print(dim(TCGA_RP_NL_up))
+
+LA_MLN_RP_down <- union(rownames(LA_MLN_RP_down), rownames(DN_MLN_RP_down))
+LA_MLN_RP_up <- union(rownames(LA_MLN_RP_up), rownames(DN_MLN_RP_up))
+LA_MLN_RP <- union(LA_MLN_RP_down, LA_MLN_RP_up)
+print(length(LA_MLN_RP))
+
+LA_NL_RP_down <- union(rownames(LA_RP_NL_down), rownames(TCGA_RP_NL_down))
+LA_NL_RP_up <- union(rownames(LA_RP_NL_up), rownames(TCGA_RP_NL_up))
+LA_NL_RP <- union(LA_NL_RP_down, LA_NL_RP_up)
+print(length(LA_NL_RP))
+
+progression_df <- read.table(paste0(PATH_SIGNATURE, "progression_signature", ".csv"), header=T)
+progression_signature_df <- read.table(paste0(PATH_SIGNATURE, "progression_signature_top225_PC1", ".csv"), header=T)
+aggressive_signature_df <- read.table(paste0(PATH_SIGNATURE, "aggressive_signature", ".csv"), header=T)
+aggressive_signature_df <- data.frame(Genes = signature)
+```
+```{r}
+print(intersect(sig_genes, LA_MLN_RP_up))
+print(intersect(sig_genes, LA_MLN_RP_down))
+print(intersect(sig_genes, LA_MLN_RP))
+print(intersect(sig_genes, LA_NL_RP_up))
+print(intersect(sig_genes, LA_NL_RP_down))
+LA_MLN_RP_NL_down <- intersect(union(rownames(LA_MLN_RP_down), rownames(DN_MLN_RP_down)),
+                               union(rownames(LA_RP_NL_down), rownames(TCGA_RP_NL_down)))
+LA_MLN_RP_NL_up <- intersect(union(rownames(LA_MLN_RP_up), rownames(DN_MLN_RP_up)),
+                             union(rownames(LA_RP_NL_up), rownames(TCGA_RP_NL_up)))
+print(intersect(sig_genes, LA_MLN_RP_NL_up))
+print(intersect(sig_genes, LA_MLN_RP_NL_down))
+```
+
+
+
+```{r}
+se <- SummarizedExperiment(
+  assays = list(counts = DN_counts),
+  colData = DN_info,
+  rowData = rownames(DN_counts)
+)
+se$sampletype <- as.factor(se$sampletype)
+se$patID <- as.factor(se$patID)
+se$batch <- as.factor(se$batch)
+
+se_norm <- BatchQC::  BatchQC::normalize_SE(se = se, method = "CPM",
+    log_bool = TRUE, assay_to_normalize = "log_intensity",
+    output_assay_name = "CPM_log_normalized_counts")
+```
+```{r}
+DN_info$sampletype <- factor(DN_info$sampletype, levels = c("RP", "MLN"))
+modmatrix = model.matrix(~patID+sampletype, data=DN_info)
+dge = DGEList(count=DN_counts)
+log_cpm <-log2(cpm(dge) + 1)
+batch_factor = as.factor(DN_info$batch)
+batch_effect_res <- batchQC_analyze(log_cpm, as.factor(DN_info$batch), mod=modmatrix)
+```
+
+```{r}
+gene_vars <- apply(log_cpm, 1, var)
+log_cpm_filtered <- log_cpm[gene_vars > 0.1, ]
+```
+
+
+```{r}
+mod <- model.matrix(~batch, data=DN_info)
+combat_counts <- ComBat(log_cpm, as.factor(DN_info$sampletype), mod=mod)
+mod2 <- model.matrix(~batch, data=DN_info)
+batch_effect_res_combat <- batchQC_analyze(combat_counts, as.factor(DN_info$batch), mod=modmatrix)
+```
