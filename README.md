@@ -40,8 +40,10 @@ To reproduce the full pipeline:
 Scripts/tNGS_variant_calling/0_Varscan_all.sh                               # Perform VarScan2     
 Scripts/tNGS_variant_calling/1_locally_advanced_varscan_variants.ipynb      # Pre-processing VarScan2 output
 Scripts/tNGS_variant_calling/2_VarScanFiltering.ipynb                       # Filtering VarScan2 output
+
 # Variant summary of locally advanced and de novo cohorts
-Scripts/tNGS_variant_calling/3_tNGS_variant_call_analysis.ipynb             
+Scripts/tNGS_variant_calling/3_tNGS_variant_call_analysis.ipynb      
+
 # Main analysis
 Scripts/1_bulk_seq_analysis.Rmd
 ```
@@ -50,9 +52,11 @@ Scripts/1_bulk_seq_analysis.Rmd
 ```bash
 # Preprocessing raw data from single cell dataset from Chen et al. (2021)
 Scripts/single_cell_preprocessing/0_chenRawData.R
+
 # Run inferCNV to classify malignant cells
 # Note: malignantAnnot.tsv was used to create Data/cell_annotation.csv
 Scripts/single_cell_preprocessing/1_inferCNV_analysis.R
+
 # Perform clustering on luminal cells, fibroblast and endothelial cells
 Scripts/single_cell_preprocessing/2_subclustering_analysis.R
 ```

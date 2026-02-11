@@ -1,12 +1,12 @@
 # System files
 .DS_Store
 .Rhistory
+.Rapp.history
 
 # Python cache files
 __pycache__/
 
 # Data, Figure, and Result folders
-Data/
 FigShare/
 Figures/
 SupplementaryTables/
@@ -17,6 +17,10 @@ Results/
 *.xlsx
 *.txt
 *.tsv
+*.tsv#
+*.gz
+*.rds
+*.gmt
 rna_qc_metric.ipynb
 table_editing.ipynb
 seeding_lesion_plots.Rmd
