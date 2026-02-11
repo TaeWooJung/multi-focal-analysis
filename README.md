@@ -31,7 +31,7 @@ Louise de Schaetzen van Brienen, Taewoo Jung, et al.
 ├── SupplementaryTables/   # Key tables
 └── README.md              # This file
 ```
---
+
 
 ## 📦 Setup Instructions
 1. Clone the Repository
@@ -43,7 +43,6 @@ cd multi-focal-analysis
 - conda
 - R
 
---
 
 ## 🛠️ Run Analysis
 To reproduce the full pipeline:
@@ -60,7 +59,7 @@ Scripts/tNGS_variant_calling/3_tNGS_variant_call_analysis.ipynb
 Scripts/1_bulk_seq_analysis.Rmd
 ```
 
-### Singe cell preprocessing and annotations
+### Preprocessing and annotations of single cell dataset from Chen et al. (2021) [[1]](#ref1)
 ```bash
 # Preprocessing raw data from single cell dataset from Chen et al. (2021)
 Scripts/single_cell_preprocessing/0_chenRawData.R
@@ -81,19 +80,17 @@ Scripts/5_sc_analysis_plots.Rmd              # Generating heatmaps
 Scripts/6_survival_analysis.Rmd
 ```
 
---
 
 ## 🧪 Data Access
 ### Raw Data
 RNA-seq and tNGS datasets from Multi-focal cohorts are available on European Genome-Phenome Archive (EGA):
-- EGAS00001006466 [2](#ref2)
-- EGAS00001006715 [3](#ref3)
+- EGAS00001006466 [[2]](#ref2)
+- EGAS00001006715 [[3]](#ref3)
 TCGA-PRAD dataset from National Cancer Institute and GDC Data Portal:
-- Bulk RNA-seq [4](#ref4)
-- Genome annotation [5](#ref5)
-- Clinical data [6](#ref6)
+- Bulk RNA-seq [[4]](#ref4)
+- Genome annotation [[5]](#ref5)
+- Clinical data [[6]](#ref6)
 
---
 
 ## 📘 References
 1. <a id="ref1"></a> Chen S, Zhu G, Yang Y, Wang F, Xiao YT, Zhang N et al. Single-cell analysis reveals transcriptomic remodellings in distinct cell types that contribute to human prostate cancer progression. Nat Cell Biol 2021; 23:87-98. https://doi.org/10.1038/s41556-020-00613-6.
