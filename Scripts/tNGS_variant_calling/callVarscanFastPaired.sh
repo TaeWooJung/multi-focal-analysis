@@ -7,16 +7,16 @@ reference=/home/bioit/mlarmuse/Documents/Data/Almac_project/CopenHagen_oligo/scr
 start_time=$(date)
 
 
-#if [ ! -f "${normal}.pileup" ]; then
-#    samtools mpileup -f $reference -r ${normal} > ${normal}.pileup
-#fi
+if [ ! -f "${normal}.pileup" ]; then
+    samtools mpileup -f $reference -r ${normal} > ${normal}.pileup
+fi
 
-#if [ ! -f "${normal}.pileup" ]; then
-#    samtools mpileup -f $reference -r ${tumor} > ${tumor}.pileup
-#fi
+if [ ! -f "${tumor}.pileup" ]; then
+    samtools mpileup -f $reference -r ${tumor} > ${tumor}.pileup
+fi
 
-#samtools mpileup -f $reference ${normal} > ${normal}.pileup
-#samtools mpileup -f $reference ${tumor} > ${tumor}.pileup
+# samtools mpileup -f $reference ${normal} > ${normal}.pileup
+# samtools mpileup -f $reference ${tumor} > ${tumor}.pileup
 
 echo "Starting the variant calling: "
 
