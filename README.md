@@ -5,7 +5,7 @@ This repository contains code, data references, and workflows supporting the man
 **"Multifocal cohort analysis unveils cell types associated with regional lymph node seeding in prostate cancer"**  
 Louise de Schaetzen van Brienen, Taewoo Jung, et al.  
 📅 Submitted to Genome Medicine, 2026  
-🔗 DOI: [10.1186/s13073-026-01616-y](https://10.1186/s13073-026-01616-y)
+🔗 DOI: [10.1186/s13073-026-01616-y](https://www.doi.org/10.1186/s13073-026-01616-y)
 
 
 ---
